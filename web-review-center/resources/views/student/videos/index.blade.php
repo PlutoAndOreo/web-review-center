@@ -1,25 +1,35 @@
 @extends('student.layouts.app')
 
 @section('content')
-    <div class="container">
-        <h1>Video List</h1>
-        <div class="row">
-            <div class="col-md-12">
-               {{-- <video width="640" height="360" controls controlsList="nodownload" oncontextmenu="return false;">
-                    <source src="{{ url('/video/output_streamable2.mp4') }}" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video> --}}
-                <video id="videoPlayer" width="640" height="360"  controlsList="nodownload" oncontextmenu="return false"></video>
-                <button id="customPlayBtn">Play Video</button>
-                {{-- mad add kog full screen --}}
+
+<div class="container">
+    <h1>Video List</h1>
+    <div class="row">
+        <div class="col-md-12">
+            <div id="videoContainer" style="position: relative; background:black;">
+
+                <video id="videoPlayer" style="width:100%; height:auto;" controlsList="nodownload"
+                    oncontextmenu="return false"></video>
+
+                <div style="position:absolute; bottom:10px; left:10px; z-index:10;">
+                    <button id="customPlayBtn">Play Video</button>
+                    <button id="fullscreenBtn">Fullscreen</button>
+                </div>
+
             </div>
+            {{-- mad add kog full screen --}}
         </div>
     </div>
+</div>
 
-    @push('javascript')
-        <script>
+@push('javascript')
+    <script>
         const video = document.getElementById('videoPlayer');
         const mediaSource = new MediaSource();
+        const playBtn = document.getElementById('customPlayBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const videoContainer = document.getElementById('videoContainer');
+
         video.src = URL.createObjectURL(mediaSource);
 
         const chunkSize = 1024 * 1024; // 1MB
@@ -51,7 +61,9 @@
             sourceBuffer.addEventListener('updateend', () => {
                 currentStart = end + 1;
                 getNextChunk();
-            }, { once: true });
+            }, {
+                once: true
+            });
 
             if (currentStart === 0) {
                 const playBtn = document.getElementById('customPlayBtn');
@@ -64,8 +76,26 @@
             }
         }
 
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                if (videoContainer.requestFullscreen) {
+                    videoContainer.requestFullscreen();
+                } else if (videoContainer.webkitRequestFullscreen) {
+                    videoContainer.webkitRequestFullscreen();
+                } else if (videoContainer.msRequestFullscreen) {
+                    videoContainer.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        });
 
-
-        </script>
-    @endpush
+    </script>
+@endpush
 @endsection
