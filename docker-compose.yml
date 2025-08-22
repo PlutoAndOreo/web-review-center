@@ -35,7 +35,7 @@ services:
     environment:
       - "LANG=C.UTF-8"
       - "MYSQL_ROOT_PASSWORD=root" # replaced password on your desired value
-      - "MYSQL_DATABASE=wrc-database" # replaced database name on your desired value
+      - "MYSQL_DATABASE=wrc_database" # replacead database name on your desired value
       - "MYSQL_PASSWORD=root"
     command: --port=3307
     volumes:
