@@ -1,16 +1,20 @@
 <?php
 
-use  App\Http\Controllers\Student\StudentVideoController;
-use  App\Http\Controllers\Admin\VideoController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/', function () {
+    return view('welcome');
+});
 
-    Route::get('/', [VideoController::class, 'index']);
-    Route::post('/upload-video', [VideoController::class, 'upload']);
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
 
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
 
-    Route::get('/video', [StudentVideoController::class, 'index']);
-    Route::get('/video-chunk', [StudentVideoController::class, 'stream'])->name('video.show');
-    Route::get('/video-file-size', [StudentVideoController::class, 'getVideoFileSize']);
-    Route::get('/video/{filename}', [StudentVideoController::class, 'show']);
-
+require __DIR__.'/auth.php';
