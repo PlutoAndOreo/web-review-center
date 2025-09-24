@@ -9,10 +9,11 @@ export default defineConfig({
         }),
     ],
     server: {
-        host: '0.0.0.0', // allow access from Docker host
-        port: 3000,       // must match Docker port mapping
+        host: '0.0.0.0',
+        port: 3002,
+        strictPort: true,
         hmr: {
-            host: 'localhost', // host for hot module reload
+            host: 'localhost',
         },
     },
 });

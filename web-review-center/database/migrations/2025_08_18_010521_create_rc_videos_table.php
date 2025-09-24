@@ -13,13 +13,15 @@ return new class extends Migration
     
         Schema::create('rc_videos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('rc_admins');  // links to users.id 
+            $table->foreignId('user_id')->constrained('rc_admins');  
             $table->string('title');               
             $table->text('description')->nullable(); 
-            $table->string('file_path');           // where video is stored (e.g., /videos/filename.mp4)
-            $table->string('file_path_s3');           // where video is stored (e.g., /videos/filename.mp4)
-            $table->unsignedInteger('duration')->nullable(); // duration in seconds
+            $table->string('file_path');           
+            $table->string('file_path_s3')->nullable();           
+            $table->unsignedInteger('duration')->nullable(); 
             $table->enum('status', ['draft', 'published'])->default('draft');
+            $table->string('google_form_upload')->nullable();
+            $table->string('video_thumb')->nullable();           
             $table->timestamps();
         });
     }

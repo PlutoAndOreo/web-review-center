@@ -43,24 +43,6 @@ services:
         source: mysql-volume
         target: /var/lib/mysql
 
-  node:
-    build:
-      context: ./web-review-center          # <-- must include package.json
-      dockerfile: ../infra/node/Dockerfile  # <-- path to Dockerfile relative to context
-    container_name: rc-node
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./web-review-center:/app
-      - /app/node_modules
-    environment:
-      NODE_ENV: development
-    depends_on:
-      - php
-      - mysql
-
-
-
 networks:
   default:
     driver: bridge

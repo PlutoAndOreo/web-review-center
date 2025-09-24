@@ -18,8 +18,8 @@ class AdminSeeder extends Seeder
             [
                 'first_name' => 'Super',
                 'last_name' => 'Admin',
-                'email' => 'superadmin@example.com',
-                'password' => Hash::make('password123'),
+                'email' => 'admin@test.com',
+                'password' => Hash::make('admin123'),
                 'phone' => '09171234567',
                 'role' => 'super_admin',
                 'is_active' => true,

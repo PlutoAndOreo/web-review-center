@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
+use Illuminate\Validation\ValidationException;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -24,11 +25,21 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        $credentials = $request->validated();
+       
+        if (Auth::guard('admin')->attempt($credentials, $request->boolean('remember'))) {
+            $request->session()->regenerate();
 
-        $request->session()->regenerate();
+            $admin = Auth::guard('admin')->user();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+            if ($admin->role === 'super_admin') {
+                return redirect()->intended(route('dashboard'));
+
+            }    
+        }
+        throw ValidationException::withMessages([
+            'email' => __('The provided credentials are incorrect.'),
+        ]);
     }
 
     /**
