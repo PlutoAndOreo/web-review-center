@@ -23,9 +23,11 @@ class VideoRequest extends FormRequest
     {
         return [
             'title' => 'required|string|max:255',
-            'description' => 'string',
-            'video' => 'required|file|mimetypes:video/mp4|max:1024000', // max 50MB
-            'google_form_upload' => 'required|url'
+            'description' => 'nullable|string',
+            'video' => 'required|file|mimetypes:video/mp4|max:1024000', // max 1GB
+            'subject_id' => 'required|exists:rc_subjects,id',
+            'google_form_link' => 'required|url',
+            'has_watermark' => 'boolean'
         ];
     }
 }

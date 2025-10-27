@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use FFMpeg\Format\Video\X264;
 use Illuminate\Support\Str;
 use App\Models\Video;
+use App\Models\Subject;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -18,15 +19,14 @@ class VideoController extends Controller
 {
     public function index()
     {
-        
-        $video = new Video();
-        $videos = $video->all();
+        $videos = Video::with('subject')->orderByDesc('created_at')->paginate(5);
         return view('admin.pages.video-list', compact('videos'));
     }
 
     public function create()
     {
-        return view('admin.upload.video-upload');
+        $subjects = Subject::where('is_active', true)->get();
+        return view('admin.upload.video-upload', compact('subjects'));
     }
 
     public function upload(VideoRequest $request)
@@ -36,8 +36,8 @@ class VideoController extends Controller
             // process uploaded file with ffmpeg to ensure streamable mp4 and get duration
             [$processedPath, $duration] = $this->processVideo($request->file('video'), $uploadToken);
 
-        // generate a thumbnail from the processed video (relative path on public disk)
-        $thumbnailPath = $this->generateThumbnail($processedPath, 5);
+            // generate a thumbnail from the processed video (relative path on public disk)
+            $thumbnailPath = $this->generateThumbnail($processedPath, 5);
 
             // save record
             $videoRecord = Video::create([
@@ -45,8 +45,11 @@ class VideoController extends Controller
                 'description' => $request->description,
                 'file_path'   => $processedPath,
                 'duration'    => $duration,
-            'video_thumb' => $thumbnailPath,
+                'video_thumb' => $thumbnailPath,
                 'google_form_upload' => $request->google_form_upload,
+                'google_form_link' => $request->google_form_link,
+                'subject_id'  => $request->subject_id,
+                'has_watermark' => $request->has_watermark ?? false,
                 'status'      => 'draft',
                 'user_id'     => auth()->id(),
             ]);
@@ -82,8 +85,28 @@ class VideoController extends Controller
     public function processVideo($file, ?string $uploadToken = null) : array {
         $uploadedPath = $file->store('uploads', 'private');
 
+        // Validate video format and get basic info
+        $media = FFMpeg::fromDisk('private')->open($uploadedPath);
+        $duration = $media->getDurationInSeconds();
+        
+        // Validate duration (1 hour to 8 hours)
+        if ($duration < 3600 || $duration > 28800) {
+            throw new \Exception('Video duration must be between 1 hour and 8 hours.');
+        }
+        
+        // Get video dimensions
+        $videoStream = $media->getVideoStream();
+        $width = $videoStream->get('width');
+        $height = $videoStream->get('height');
+        
+        // Validate resolution (at least 720p)
+        if ($height < 720) {
+            throw new \Exception('Video resolution must be at least 720p (1280x720).');
+        }
+
         $today = date('Y-m-d');
-        $outputPath = "videos/{$today}/output_streamable_" . time() . ".mp4";
+        $videoNumber = Video::count() + 1;
+        $outputPath = "videos/{$today}/review_center_video{$videoNumber}_{$today}.mp4";
 
         $exporter = FFMpeg::fromDisk('private')
             ->open($uploadedPath)
@@ -102,7 +125,14 @@ class VideoController extends Controller
             ->addFilter(['-profile:v', 'main'])
             ->addFilter(['-level', '4.1'])
             ->addFilter(['-c:a', 'aac'])
-            ->addFilter(['-movflags', '+frag_keyframe+empty_moov+default_base_moof'])
+            ->addFilter(['-movflags', '+frag_keyframe+empty_moov+default_base_moof']);
+
+        // Add watermark if requested
+        if ($request->has_watermark) {
+            $exporter->addFilter(['-vf', 'drawtext=text=\'Review Center\':fontcolor=white:fontsize=24:x=10:y=10:alpha=0.7']);
+        }
+
+        $exporter
             ->inFormat(new \FFMpeg\Format\Video\X264)
             ->save($outputPath);
 
@@ -127,7 +157,9 @@ class VideoController extends Controller
     public function generateThumbnail(string $videoPath, int $second = 5): string
     {
         // Save first to the public disk (storage/app/public) then move to web root public/thumbnails
-        $thumbnailRelative = 'thumbnails/' . uniqid() . '.jpg';
+        $today = date('Y-m-d');
+        $videoNumber = Video::count() + 1;
+        $thumbnailRelative = 'thumbnails/review_center_video' . $videoNumber . '_' . $today . '.jpg';
 
         FFMpeg::fromDisk('private')
             ->open($videoPath)
@@ -169,6 +201,7 @@ class VideoController extends Controller
 
         $filePath = $video->file_path;
         $duration = $video->duration;
+        $uploadToken = $request->input('upload_token');
 
         // check if new video uploaded
         if ($request->hasFile('video')) {
@@ -176,7 +209,7 @@ class VideoController extends Controller
                 Storage::disk('private')->delete($video->file_path);
             }
 
-            [$filePath, $duration] = $this->processVideo($request->file('video'));
+            [$filePath, $duration] = $this->processVideo($request->file('video'), $uploadToken);
         }
 
         // update db record
@@ -188,13 +221,46 @@ class VideoController extends Controller
             // status removed from edit as requested
         ]);
 
+        if ($uploadToken) {
+            Cache::put('video_progress:' . $uploadToken, 100, now()->addMinutes(10));
+        }
+
         return response()->json([
-            'id'          => $video->id,
-            'title'       => $video->title,
-            'file_path'   => $video->file_path,
-            'duration'    => $video->duration,
-            'status'      => $video->status,
+            'message'  => 'Video updated successfully!',
+            'id'       => $video->id,
+            'redirect' => route('videos.list'),
         ]);
+    }
+
+    public function stream(Request $request, $id)
+    {
+        $video = Video::findOrFail($id);
+        $path = storage_path('app/private/' . ltrim($video->file_path, '/'));
+        
+        if (!file_exists($path)) {
+            abort(404, 'Video file not found');
+        }
+
+        $start = intval($request->query('start', 0));
+        $size = filesize($path);
+        $end = intval($request->query('end', $size - 1));
+        $length = $end - $start + 1;
+
+        $headers = [
+            'Content-Type' => 'video/mp4',
+            'Accept-Ranges' => 'bytes',
+            'Content-Range' => "bytes $start-$end/$size",
+            'Content-Length' => $length
+        ];
+
+        $stream = function() use ($path, $start, $length) {
+            $handle = fopen($path, 'rb');
+            fseek($handle, $start);
+            echo fread($handle, $length);
+            fclose($handle);
+        };
+
+        return response()->stream($stream, 206, $headers);
     }
 
     public function destroy($id)

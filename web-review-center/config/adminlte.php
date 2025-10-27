@@ -258,7 +258,7 @@ return [
 
     'use_route_url' => false,
     'dashboard_url' => 'home',
-    'logout_url' => 'logout',
+    'logout_url' => '#logout',
     'login_url' => 'login',
     'register_url' => 'register',
     'password_reset_url' => 'password/reset',
@@ -311,14 +311,35 @@ return [
         [
             'text' => 'User',
             'url' => '/users',
-            'icon' => 'fa fa-user',
+            'icon' => 'fas fa-user',
             'label' => '',
             'label_color' => '',
         ],
         [
             'text' => 'Videos',
             'url' => '/videos',
-            'icon' => 'fa fa-solid fa-video',
+            'icon' => 'fas fa-video',
+            'label' => '',
+            'label_color' => '',
+        ],
+        [
+            'text' => 'Students',
+            'url' => '/students',
+            'icon' => 'fas fa-user',
+            'label' => '',
+            'label_color' => '',
+        ],
+        [
+            'text' => 'Subjects',
+            'url' => '/subjects',
+            'icon' => 'fas fa-book',
+            'label' => '',
+            'label_color' => '',
+        ],
+        [
+            'text' => 'Notifications',
+            'url' => '/notifications',
+            'icon' => 'fas fa-bell',
             'label' => '',
             'label_color' => '',
         ]

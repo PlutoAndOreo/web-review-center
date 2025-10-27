@@ -27,20 +27,31 @@ class AppServiceProvider extends ServiceProvider
         });
 
         app('events')->listen(BuildingMenu::class, function (BuildingMenu $event) {
+            $user = auth()->user();
+            $userName = $user ? ($user->first_name . ' ' . $user->last_name) : 'Profile';
+            $profileUrl = $user ? "/users/{$user->id}/edit" : "#";
+            $logoutUrl = $user ? '/admin/logout' : '#';
+
             $event->menu->add([
-                'text'   => '',
-                'url'    => '',
-                'topnav' => 'right',
-                'icon'   => 'fa fa-solid fa-bell',
+                'text'   => "Hi! $userName",
+                'icon'   => 'fas fa-user',
+                'topnav_right' => 'right',
+                'icon_color' => 'primary',
+                'icon_right' => true,
+                'submenu' => [
+                    [
+                        'text' => 'Profile',
+                        'url'  => $profileUrl,
+                        'icon' => 'fas fa-user',
+                    ],
+                    [
+                        'text'   => 'Logout',
+                        'url'    => '#logout',
+                        'icon'   => 'fas fa-sign-out-alt',
+                    ],
+                ],
             ]);
     
-            $event->menu->add([
-                'text'   => "Hi! ". auth()->user()->first_name . ' ' .auth()->user()->last_name?? 'Profile', // 👈 dynamic variable
-                'url'    => '/profile',
-                'topnav'     => 'left',
-                'icon_color' => 'primary',
-                'icon_right' => true, 
-            ]);
         });
     }
 }

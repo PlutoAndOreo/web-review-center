@@ -34,26 +34,7 @@
 			50% { opacity: 0.6; }
 		}
 
-		/* Progress bar */
-		.progress-container {
-			width: 100%;
-			background: #f1f5f9;
-			border-radius: 9999px;
-			overflow: hidden;
-			height: 14px;
-			border: 1px solid #e2e8f0;
-		}
-
-		.progress-bar {
-			height: 100%;
-			width: 0;
-			background: linear-gradient(90deg, #3b82f6, #2563eb);
-			color: #fff;
-			text-align: center;
-			font-size: 10px;
-			line-height: 14px;
-			transition: width 0.2s ease;
-		}
+        /* Progress bar removed */
 
 		/* Modal */
 		.modal-overlay {
@@ -96,9 +77,20 @@
     @endsection
 
     @section('content')
+	@include('admin.components.logout')
+
     <div class="min-h-screen flex items-center justify-center bg-gray-100 py-10">
         <div class="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-lg">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Upload New Video</h2>
+            <div class="flex items-center justify-between mb-6">
+                <a href="{{ route('videos.list') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Videos
+                </a>
+                <h2 class="text-2xl font-bold text-gray-800">Upload New Video</h2>
+                <div></div>
+            </div>
 
             <form action="{{ route('videos.upload') }}" method="POST" enctype="multipart/form-data"
                 class="space-y-5" id="uploadForm">
@@ -139,18 +131,47 @@
                 @enderror
 				<p class="text-sm text-red-600 mt-1" id="error-video"></p>
 
-                {{-- Google Form Link --}}
+                {{-- Subject Selection --}}
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-1">Google Form Link <span
+                    <label class="block text-gray-700 font-semibold mb-1">Subject <span
                             class="text-red-500">*</span></label>
-                    <input type="url" name="google_form_upload"
-                        value="{{ old('google_form_upload') }}"
+                    <select name="subject_id" 
                         class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none">
+                        <option value="">Select a subject</option>
+                        @foreach($subjects as $subject)
+                            <option value="{{ $subject->id }}" {{ old('subject_id') == $subject->id ? 'selected' : '' }}>
+                                {{ $subject->name }} ({{ $subject->code }})
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
-                @error('google_form_upload')
+                @error('subject_id')
                     <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
                 @enderror
-				<p class="text-sm text-red-600 mt-1" id="error-google_form_upload"></p>
+				<p class="text-sm text-red-600 mt-1" id="error-subject_id"></p>
+
+                {{-- Google Form Link --}}
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-1">Google Form Link (for exam after video) <span
+                            class="text-red-500">*</span></label>
+                    <input type="url" name="google_form_link"
+                        value="{{ old('google_form_link') }}"
+                        placeholder="https://forms.google.com/..."
+                        class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none">
+                </div>
+                @error('google_form_link')
+                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                @enderror
+				<p class="text-sm text-red-600 mt-1" id="error-google_form_link"></p>
+
+                {{-- Watermark Option --}}
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="has_watermark" value="1" {{ old('has_watermark') ? 'checked' : '' }}
+                            class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-gray-700 font-semibold">Add watermark to video for students</span>
+                    </label>
+                </div>
 
                 {{-- Submit button --}}
                 <div class="mt-10">
@@ -182,7 +203,6 @@
 		<script>
 			(function () {
 				const form = document.getElementById('uploadForm');
-				const bar = document.getElementById('progressBar');
 				const labelEl = document.getElementById('progressLabel');
 				const btn = document.getElementById('btn-upload');
 				const modal = document.getElementById('uploadModal');
@@ -192,18 +212,18 @@
 				let lastProcessPercent = 0;
 				let lastProcessTs = 0;
 
-				function setProgress(percent, label) {
-					if (label) labelEl.textContent = label;
-				}
+                function setProgress(percent, label) { if (label) labelEl.textContent = label; }
 
 				function hasClientErrors() {
 					let hasError = false;
 					const title = form.querySelector('input[name="title"]').value.trim();
 					const video = form.querySelector('input[name="video"]').files[0];
-					const link = form.querySelector('input[name="google_form_upload"]').value.trim();
+					const subject = form.querySelector('select[name="subject_id"]').value;
+					const link = form.querySelector('input[name="google_form_link"]').value.trim();
 					if (!title) { document.getElementById('error-title').textContent = 'The title field is required.'; hasError = true; }
 					if (!video) { document.getElementById('error-video').textContent = 'The video field is required.'; hasError = true; }
-					if (!link) { document.getElementById('error-google_form_upload').textContent = 'The google form link field is required.'; hasError = true; }
+					if (!subject) { document.getElementById('error-subject_id').textContent = 'The subject field is required.'; hasError = true; }
+					if (!link) { document.getElementById('error-google_form_link').textContent = 'The google form link field is required.'; hasError = true; }
 					return hasError;
 				}
 
@@ -217,31 +237,26 @@
 					btn.disabled = true;
 
 					// clear previous ajax errors
-					['title','description','video','google_form_upload'].forEach(function(name){
+					['title','description','video','subject_id','google_form_link'].forEach(function(name){
 						const el = document.getElementById('error-' + name);
 						if (el) el.textContent = '';
 					});
 
-					// Do not show progress bar if there are client-side errors
+                    // Do not show modal if there are client-side errors
 					if (hasClientErrors()) {
 						btn.disabled = false;
 						return;
 					}
 
-					// show and initialize progress UI only when there are no errors
+                    // show and initialize minimal loading UI only when there are no errors
 					modal.classList.add('show');
 					setProgress(0, 'Starting upload...');
 					// set token to correlate server progress
 					uploadToken = (Math.random().toString(36).slice(2)) + Date.now().toString(36);
 					formData.append('upload_token', uploadToken);
 
-					xhr.upload.onprogress = function (e) {
-						if (!e.lengthComputable) return;
-						const elapsedSec = (Date.now() - startTime) / 1000;
-						const speed = e.loaded / Math.max(elapsedSec, 0.001);
-						const remainingSec = (e.total - e.loaded) / Math.max(speed, 1);
-						setProgress(0, 'Uploading...');
-					};
+                    // progress bar removed; keep label-only updates
+                    xhr.upload.onprogress = function () { setProgress(0, 'Uploading...'); };
 
 						xhr.onreadystatechange = function () {
 						if (xhr.readyState === 2) {

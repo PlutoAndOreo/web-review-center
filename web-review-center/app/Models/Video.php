@@ -17,7 +17,10 @@ class Video extends Model
         'duration',
         'status',
         'google_form_upload',
+        'google_form_link',
         'video_thumb',
+        'subject_id',
+        'has_watermark',
     ];
 
     public function user()
@@ -29,5 +32,13 @@ class Video extends Model
         return self::all();
     }
 
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class);
+    }
 
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
 }

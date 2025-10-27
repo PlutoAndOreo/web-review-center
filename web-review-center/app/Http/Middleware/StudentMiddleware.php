@@ -16,10 +16,10 @@ class StudentMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && Auth::user()->role === 'student') {
+        if (Auth::guard('student')->check()) {
             return $next($request);
         }
 
-        abort(403, 'Unauthorized action.');
+        return redirect()->route('student.login');
     }
 }

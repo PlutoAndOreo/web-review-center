@@ -36,8 +36,5 @@
           </button>
       </form>
 
-      <p class="text-center text-gray-500 text-sm mt-4">
-          Don't have an account? <a href="#" class="text-blue-500 hover:underline">Sign up</a>
-      </p>
   </div>
 @endsection

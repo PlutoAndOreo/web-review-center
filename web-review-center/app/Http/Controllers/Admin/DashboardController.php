@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin;
 use App\Models\Video;
+use App\Models\Student;
+use App\Models\Subject;
 
 class DashboardController extends Controller
 {
@@ -13,8 +15,16 @@ class DashboardController extends Controller
     {
         $totalAdminUser = Admin::count();
         $totalVideos = Video::count();
-
-
-        return view('admin.pages.dashboard', compact('totalAdminUser', 'totalVideos'));
+        $totalStudents = Student::count();
+        $totalSubjects = Subject::count();
+        
+        return view('admin.pages.dashboard', 
+            compact(
+                'totalAdminUser',
+                'totalVideos',
+                'totalStudents',
+                'totalSubjects'
+            )
+        );
     }
 }

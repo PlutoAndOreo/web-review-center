@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StudentRequest;
 use App\Models\Admin;
 
 use Illuminate\Http\Request;
@@ -16,24 +17,24 @@ class UserController extends Controller
         return view('admin.pages.user-list', compact('users'));
     }
 
-    public function update(Request $request, $id)
+    public function edit($id)
     {
         $admin = Admin::find($id);  
-        if (!$admin) {
-            return redirect()->back()->with('error', 'User not found.');
+
+        return view('admin.pages.edit.user-edit', compact('admin'));
+    }
+
+    public function update (StudentRequest $req, $id) {
+        $admin = Admin::find($id);
+
+        $admin->first_name = $req->first_name;
+        $admin->last_name = $req->last_name;
+        $admin->email = $req->email;
+        if ($req->password) {
+            $admin->password = bcrypt($req->password);  
         }
-
-        $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:admins,email,' . $id,
-        ]);
-
-        $admin->first_name = $request->input('first_name');
-        $admin->last_name = $request->input('last_name');
-        $admin->email = $request->input('email');
         $admin->save();
 
-        return redirect()->back()->with('success', 'User updated successfully.');
+        return redirect()->route('admin.pages.user-list')->with('success', 'User updated successfully.');
     }
 }
