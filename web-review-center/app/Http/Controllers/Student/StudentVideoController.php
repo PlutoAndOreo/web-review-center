@@ -5,19 +5,34 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use App\Models\Video;
 
 class StudentVideoController extends Controller
 {
     public function index($id)
     {
-        // return view('student.videos.index', ['videoId' => $id]);
-        $form = Video::where('id', $id)->first();
-        $formUrl = $form ? $form->form_url : null;
+        $video = Video::where('id', $id)->firstOrFail();
+        $formUrl = $video->google_form_link ?? $video->google_form_upload ?? null;
+        $studentId = auth()->guard('student')->id();
+        
+        // Check completion status
+        $history = DB::table('rc_student_histories')
+            ->where('student_id', $studentId)
+            ->where('video_id', $id)
+            ->first();
+        
+        $isCompleted = $history && $history->form_completed;
+        $retakeAllowed = $history && $history->retake_allowed;
+        $showForm = !$isCompleted || $retakeAllowed;
     
         return view('student.videos.index', [
             'videoId' => $id,
             'formUrl' => $formUrl,
+            'isCompleted' => $isCompleted,
+            'showForm' => $showForm,
+            'retakeAllowed' => $retakeAllowed,
+            'video_title' => $video->title
         ]);
     }
 
@@ -60,28 +75,68 @@ class StudentVideoController extends Controller
             return response()->json(['error' => 'File path is null'], 404);
         }
 
-        $start = intval($request->query('start', 0));
-        $end   = intval($request->query('end', $start + 1024 * 1024));
+        if (!file_exists($path)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
 
         $size = filesize($path);
-        if ($end >= $size) $end = $size - 1;
-        $length = $end - $start + 1;
+        $rangeHeader = $request->header('Range');
 
-        $headers = [
-            'Content-Type' => 'video/mp4',
-            'Accept-Ranges' => 'bytes',
-            'Content-Range' => "bytes $start-$end/$size",
-            'Content-Length' => $length
-        ];
+        if ($rangeHeader) {
+            if (!preg_match('/bytes=(\d*)-(\d*)/', $rangeHeader, $matches)) {
+                return response('', 416, ['Content-Range' => "bytes */{$size}"]);
+            }
 
-        $stream = function() use ($path, $start, $length) {
-            $handle = fopen($path, 'rb');
-            fseek($handle, $start);
-            echo fread($handle, $length);
-            fclose($handle);
-        };
+            $start = $matches[1] === '' ? 0 : intval($matches[1]);
+            $end = $matches[2] === '' ? ($size - 1) : intval($matches[2]);
+            if ($end >= $size) {
+                $end = $size - 1;
+            }
+            if ($start > $end || $start >= $size) {
+                return response('', 416, ['Content-Range' => "bytes */{$size}"]);
+            }
 
-        return response()->stream($stream, 206, $headers);
+            $length = $end - $start + 1;
+            $headers = [
+                'Content-Type' => 'video/mp4',
+                'Accept-Ranges' => 'bytes',
+                'Content-Range' => "bytes {$start}-{$end}/{$size}",
+                'Content-Length' => $length,
+                'Cache-Control' => 'no-cache'
+            ];
+
+            $stream = function () use ($path, $start, $length) {
+                $handle = fopen($path, 'rb');
+                fseek($handle, $start);
+                $bufferSize = 1024 * 1024;
+                $bytesLeft = $length;
+                while ($bytesLeft > 0 && !feof($handle)) {
+                    $readLength = ($bytesLeft > $bufferSize) ? $bufferSize : $bytesLeft;
+                    echo fread($handle, $readLength);
+                    flush();
+                    $bytesLeft -= $readLength;
+                }
+                fclose($handle);
+            };
+
+            return response()->stream($stream, 206, $headers);
+        } else {
+            $headers = [
+                'Content-Type' => 'video/mp4',
+                'Content-Length' => $size,
+                'Accept-Ranges' => 'bytes',
+                'Cache-Control' => 'no-cache'
+            ];
+            $stream = function () use ($path) {
+                $handle = fopen($path, 'rb');
+                while (!feof($handle)) {
+                    echo fread($handle, 1024 * 1024);
+                    flush();
+                }
+                fclose($handle);
+            };
+            return response()->stream($stream, 200, $headers);
+        }
     }
 
     public function getVideoFileSize($id) {
@@ -101,6 +156,22 @@ class StudentVideoController extends Controller
         $size = filesize($filePath);
 
         return response()->json(['size' => $size]);
+    }
+
+    public function checkCompletionStatus($id)
+    {
+        $studentId = auth()->guard('student')->id();
+        
+        $history = DB::table('rc_student_histories')
+            ->where('student_id', $studentId)
+            ->where('video_id', $id)
+            ->first();
+        
+        return response()->json([
+            'isCompleted' => $history && $history->form_completed,
+            'retakeAllowed' => $history && $history->retake_allowed,
+            'showForm' => !($history && $history->form_completed) || ($history && $history->retake_allowed),
+        ]);
     }
 
     public function show($videoId)

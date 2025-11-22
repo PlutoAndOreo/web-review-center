@@ -34,7 +34,7 @@ class SubjectController extends Controller
             'is_active' => true,
         ]);
 
-        return redirect()->route('subjects.list')->with('success', 'Subject created successfully!');
+        return redirect()->route('admin.subjects.list')->with('success', 'Subject created successfully!');
     }
 
     public function edit($id)
@@ -61,7 +61,7 @@ class SubjectController extends Controller
             'is_active' => $request->has('is_active'),
         ]);
 
-        return redirect()->route('subjects.list')->with('success', 'Subject updated successfully!');
+        return redirect()->route('admin.subjects.list')->with('success', 'Subject updated successfully!');
     }
 
     public function destroy($id)
@@ -70,10 +70,10 @@ class SubjectController extends Controller
         
         // Check if subject has videos
         if ($subject->videos()->count() > 0) {
-            return redirect()->route('subjects.list')->with('error', 'Cannot delete subject with existing videos.');
+            return redirect()->route('admin.subjects.list')->with('error', 'Cannot delete subject with existing videos.');
         }
 
         $subject->delete();
-        return redirect()->route('subjects.list')->with('success', 'Subject deleted successfully!');
+        return redirect()->route('admin.subjects.list')->with('success', 'Subject deleted successfully!');
     }
 }

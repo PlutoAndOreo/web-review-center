@@ -12,6 +12,9 @@ class Comment extends Model
         'video_id',
         'student_id',
         'content',
+        'admin_reply',
+        'admin_id',
+        'admin_replied_at',
         'is_read',
     ];
 
@@ -27,5 +30,10 @@ class Comment extends Model
     public function student()
     {
         return $this->belongsTo(Student::class);
+    }
+
+    public function admin()
+    {
+        return $this->belongsTo(Admin::class, 'admin_id');
     }
 }

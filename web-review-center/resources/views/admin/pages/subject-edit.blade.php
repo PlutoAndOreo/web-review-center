@@ -12,7 +12,7 @@
 <div class="min-h-screen flex items-center justify-center bg-gray-100 py-10">
     <div class="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-lg">
         <div class="flex items-center justify-between mb-6">
-            <a href="{{ route('subjects.list') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800">
+            <a href="{{ route('admin.subjects.list') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800">
                 <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                 </svg>
@@ -22,7 +22,7 @@
             <div></div>
         </div>
 
-        <form action="{{ route('subjects.update', $subject->id) }}" method="POST" class="space-y-5">
+        <form action="{{ route('admin.subjects.update', $subject->id) }}" method="POST" class="space-y-5">
             @csrf
             @method('POST')
 

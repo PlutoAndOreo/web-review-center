@@ -51,5 +51,10 @@
         document.getElementById('loginSpinner').classList.remove('hidden');
         document.body.style.pointerEvents = 'none';
     });
+
+    function togglePassword(fieldId) {
+        const field = document.getElementById(fieldId);
+        field.type = field.type === "password" ? "text" : "password";
+    }
 </script>
 @endpush

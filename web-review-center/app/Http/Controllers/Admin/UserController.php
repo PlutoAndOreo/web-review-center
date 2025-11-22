@@ -35,6 +35,6 @@ class UserController extends Controller
         }
         $admin->save();
 
-        return redirect()->route('admin.pages.user-list')->with('success', 'User updated successfully.');
+        return redirect()->route('admin.users.list')->with('success', 'User updated successfully.');
     }
 }

@@ -3,29 +3,114 @@
 @section('title', 'Student List')
 
 @section('css')
-    @vite('resources/css/app.css')
-@endsection
+@vite('resources/css/app.css')
+    @endsection
 
-@section('content')
+    @section('content')
 
-@include('admin.components.logout')
-    <div class="overflow-x-auto">
-        <table class="w-full border border-gray-200 rounded-lg">
-            <thead class="bg-gray-100">
-                <tr>
-                    <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600 border-b">Name</th>
-                    <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600 border-b">Email</th>
+    @include('admin.components.logout')
 
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-                @foreach ($students as $student)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-2 text-sm text-gray-700">{{ $student->first_name .' '.$student->last_name }}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700">{{ $student->email}}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+
+    <div class="min-h-screen bg-gray-100 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-2xl font-bold text-gray-900">Student Management</h1>
+                    </div>
+
+                    @if(session('success'))
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Name
+                                    </th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Email
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Address
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Phone Number
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        School Graduated
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Year Graduated
+                                    </th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @forelse($students as $student)
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {{ $student->first_name .' '.$student->last_name }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {{ $student->email }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {{ $student->address }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {{ $student->phone }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {{ $student->school_graduated }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {{ $student->graduation_year }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <a href="{{ route('admin.students.edit', $student->id) }}" 
+                                                class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
+                                            <a href="{{ route('admin.students.video-progress', $student->id) }}" 
+                                                class="text-green-600 hover:text-green-900 mr-3">Status</a>
+                                            <form action="{{ route('admin.students.destroy', $student->id) }}" 
+                                                method="POST" class="inline"
+                                                onsubmit="return confirm('Are you sure you want to delete this student?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                    class="text-red-600 hover:text-red-900">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                                            No Student found.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4">
+                        {{ $students->links() }}
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-@stop
+    @stop

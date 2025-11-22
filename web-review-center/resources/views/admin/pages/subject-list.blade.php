@@ -3,10 +3,11 @@
 @section('title', 'Subjects Management')
 
 @section('css')
-@vite('resources/css/app.css')
+    @vite('resources/css/app.css')
 @endsection
 
 @section('content')
+
 @include('admin.components.logout')
 
 <div class="min-h-screen bg-gray-100 py-6">
@@ -15,7 +16,7 @@
             <div class="px-4 py-5 sm:p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-2xl font-bold text-gray-900">Subjects Management</h1>
-                    <a href="{{ route('subjects.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    <a href="{{ route('admin.subjects.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                         Add New Subject
                     </a>
                 </div>
@@ -65,8 +66,8 @@
                                         {{ $subject->videos()->count() }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <a href="{{ route('subjects.edit', $subject->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                                        <form action="{{ route('subjects.destroy', $subject->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this subject?')">
+                                        <a href="{{ route('admin.subjects.edit', $subject->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
+                                        <form action="{{ route('admin.subjects.destroy', $subject->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this subject?')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>

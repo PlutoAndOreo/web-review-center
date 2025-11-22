@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
-use App\Models\Comment;
-use App\Models\Notification;
-use App\Models\Video;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Notification;
+use Illuminate\Http\Request;
+use App\Models\Comment;
+use App\Models\Student;
+use App\Models\Video;
+use App\Models\Admin;
+use Carbon\Carbon;
 
 class CommentController extends Controller
 {
@@ -26,7 +29,7 @@ class CommentController extends Controller
         ]);
 
         // Create notification for all admins
-        $admins = \App\Models\RcAdmin::all();
+        $admins = Admin::all();
         foreach ($admins as $admin) {
             Notification::create([
                 'admin_id' => $admin->id,
@@ -51,7 +54,8 @@ class CommentController extends Controller
     public function index($videoId)
     {
         $video = Video::findOrFail($videoId);
-        $comments = Comment::with('student')
+
+        $comments = Comment::with(['student', 'admin'])
             ->where('video_id', $videoId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -63,6 +67,9 @@ class CommentController extends Controller
                     'content' => $comment->content,
                     'student_name' => $comment->student->first_name . ' ' . $comment->student->last_name,
                     'created_at' => $comment->created_at->format('M d, Y H:i'),
+                    'admin_reply' => $comment->admin_reply,
+                    'admin_name' => $comment->admin ? ($comment->admin->first_name . ' ' . $comment->admin->last_name) : null,
+                    'admin_replied_at' => Carbon::parse($comment->admin_replied_at) ? Carbon::parse($comment->admin_replied_at)->format('M d, Y H:i') : null,
                 ];
             })
         ]);

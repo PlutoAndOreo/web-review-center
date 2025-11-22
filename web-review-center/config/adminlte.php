@@ -69,6 +69,7 @@ return [
     'logo_img_xl' => null,
     'logo_img_xl_class' => 'brand-image-xs',
     'logo_img_alt' => 'Admin Logo',
+    'logo_url' => null, // Will be set dynamically in AppServiceProvider
 
     /*
     |--------------------------------------------------------------------------
@@ -138,7 +139,7 @@ return [
     'usermenu_header_class' => 'bg-primary',
     'usermenu_image' => false,
     'usermenu_desc' => false,
-    'usermenu_profile_url' => false,
+    'usermenu_profile_url' => null, // Will be set dynamically in AppServiceProvider
 
     /*
     |--------------------------------------------------------------------------
@@ -257,14 +258,14 @@ return [
     */
 
     'use_route_url' => false,
-    'dashboard_url' => 'home',
+    'dashboard_url' => false,
     'logout_url' => '#logout',
     'login_url' => 'login',
     'register_url' => 'register',
     'password_reset_url' => 'password/reset',
     'password_email_url' => 'password/email',
-    'profile_url' => false,
-    'disable_darkmode_routes' => false,
+    'profile_url' => null, // Will be set dynamically in AppServiceProvider
+    'disable_darkmode_routes' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -303,42 +304,42 @@ return [
         // sidebar
         [
             'text' => 'Dashboard',
-            'url' => '/dashboard',
+            'url' => '/admin/dashboard',
             'icon' => 'fa fa-solid fa-book',
             'label' => '',
             'label_color' => '',
         ],
         [
             'text' => 'User',
-            'url' => '/users',
+            'url' => '/admin/users',
             'icon' => 'fas fa-user',
             'label' => '',
             'label_color' => '',
         ],
         [
             'text' => 'Videos',
-            'url' => '/videos',
+            'url' => '/admin/videos',
             'icon' => 'fas fa-video',
             'label' => '',
             'label_color' => '',
         ],
         [
             'text' => 'Students',
-            'url' => '/students',
+            'url' => '/admin/students',
             'icon' => 'fas fa-user',
             'label' => '',
             'label_color' => '',
         ],
         [
             'text' => 'Subjects',
-            'url' => '/subjects',
+            'url' => '/admin/subjects',
             'icon' => 'fas fa-book',
             'label' => '',
             'label_color' => '',
         ],
         [
             'text' => 'Notifications',
-            'url' => '/notifications',
+            'url' => '/admin/notifications',
             'icon' => 'fas fa-bell',
             'label' => '',
             'label_color' => '',

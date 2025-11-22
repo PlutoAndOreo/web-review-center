@@ -7,18 +7,19 @@
     <title>{{ $title ?? 'Student' }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('styles')
 </head>
 <body >
-    @dd(route('student.dashboard'));
-        <nav class="w-full flex items-center justify-between p-4 bg-white shadow">
-            <div class="font-bold">Student</div>
+@if(!request()->routeIs('student.register') && !request()->routeIs('student.login'))
+        <!-- <nav class="w-full flex items-center justify-between p-4 bg-white shadow">
             <div>
                 <button type="button" id="openLogout" class="px-3 py-1 rounded bg-red-500 text-white">Logout</button>
                 <form id="studentLogoutForm" method="POST" action="{{ route('student.logout') }}" class="hidden">
                     @csrf
                 </form>
             </div>
-        </nav>
+        </nav> -->
+        @endif
     
     @yield('content')
 

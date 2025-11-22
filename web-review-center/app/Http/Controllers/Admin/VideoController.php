@@ -3,23 +3,23 @@
 namespace App\Http\Controllers\Admin;
 
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
-use App\Http\Requests\VideoRequest;
+use ProtoneMedia\LaravelFFMpeg\Filters\WatermarkFactory;
 use Illuminate\Support\Facades\Storage;
-use App\Http\Controllers\Controller;
-use FFMpeg\Format\Video\X264;
-use Illuminate\Support\Str;
-use App\Models\Video;
-use App\Models\Subject;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-
+use App\Http\Controllers\Controller;
+use App\Http\Requests\VideoRequest;
+use FFMpeg\Format\Video\X264;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use App\Models\Subject;
+use App\Models\Video;
+use Carbon\Carbon;
 
 class VideoController extends Controller
 {
     public function index()
     {
-        $videos = Video::with('subject')->orderByDesc('created_at')->paginate(5);
+        $videos = Video::with('subject')->orderByDesc('updated_at')->paginate(5);
         return view('admin.pages.video-list', compact('videos'));
     }
 
@@ -64,11 +64,11 @@ class VideoController extends Controller
                 return response()->json([
                     'message'  => 'Video uploaded and processed successfully!',
                     'id'       => $videoRecord->id,
-                    'redirect' => route('videos.list'),
+                    'redirect' => route('admin.videos.list'),
                 ]);
             }
 
-            return redirect()->route('videos.list')->with('success', 'Video uploaded and processed successfully!');
+            return redirect()->route('admin.videos.list')->with('success', 'Video uploaded and processed successfully!');
         } catch (\Throwable $e) {
             if ($request->ajax()) {
                 // also flash error so if the page reloads, message can be shown
@@ -82,62 +82,51 @@ class VideoController extends Controller
     }
 
 
-    public function processVideo($file, ?string $uploadToken = null) : array {
+    public function processVideo($file, ?string $uploadToken = null): array
+    {
         $uploadedPath = $file->store('uploads', 'private');
 
-        // Validate video format and get basic info
         $media = FFMpeg::fromDisk('private')->open($uploadedPath);
         $duration = $media->getDurationInSeconds();
-        
-        // Validate duration (1 hour to 8 hours)
-        if ($duration < 3600 || $duration > 28800) {
-            throw new \Exception('Video duration must be between 1 hour and 8 hours.');
-        }
-        
-        // Get video dimensions
+
         $videoStream = $media->getVideoStream();
         $width = $videoStream->get('width');
         $height = $videoStream->get('height');
-        
-        // Validate resolution (at least 720p)
-        if ($height < 720) {
-            throw new \Exception('Video resolution must be at least 720p (1280x720).');
-        }
 
         $today = date('Y-m-d');
         $videoNumber = Video::count() + 1;
-        $outputPath = "videos/{$today}/review_center_video{$videoNumber}_{$today}.mp4";
+        $outputPath = "videos/{$today}/review_center_video.{$videoNumber}.mp4";
 
         $exporter = FFMpeg::fromDisk('private')
             ->open($uploadedPath)
             ->export()
-            ->toDisk('private');
+            ->toDisk('private')
+            ->inFormat(new X264());
 
         if ($uploadToken) {
             Cache::put('video_progress:' . $uploadToken, 0, now()->addMinutes(10));
+
             $exporter->onProgress(function ($percentage) use ($uploadToken) {
                 Cache::put('video_progress:' . $uploadToken, (int)$percentage, now()->addMinutes(10));
             });
         }
 
-        $exporter
-            ->addFilter(['-c:v', 'libx264'])
-            ->addFilter(['-profile:v', 'main'])
-            ->addFilter(['-level', '4.1'])
-            ->addFilter(['-c:a', 'aac'])
-            ->addFilter(['-movflags', '+frag_keyframe+empty_moov+default_base_moof']);
+        $exporter->addFilter(['-c:v', 'libx264'])
+                ->addFilter(['-profile:v', 'main'])
+                ->addFilter(['-level', '4.1'])
+                ->addFilter(['-c:a', 'aac'])
+                ->addFilter(['-movflags', '+frag_keyframe+empty_moov+default_base_moof']);
 
-        // Add watermark if requested
-        if ($request->has_watermark) {
-            $exporter->addFilter(['-vf', 'drawtext=text=\'Review Center\':fontcolor=white:fontsize=24:x=10:y=10:alpha=0.7']);
-        }
+                $exporter->addWatermark(function (WatermarkFactory $watermark) {
+                    $watermark->fromDisk('private') 
+                            ->open('watermark.png')
+                            ->right(50)
+                            ->bottom(50)
+                            ->width(300);
+                });
+                
 
-        $exporter
-            ->inFormat(new \FFMpeg\Format\Video\X264)
-            ->save($outputPath);
-
-        $media = FFMpeg::fromDisk('private')->open($outputPath);
-        $duration = $media->getDurationInSeconds();
+        $exporter->save($outputPath);
 
         if ($uploadToken) {
             Cache::put('video_progress:' . $uploadToken, 100, now()->addMinutes(10));
@@ -185,22 +174,17 @@ class VideoController extends Controller
     public function edit($id)
     {
         $video = Video::findOrFail($id);
-        return view('admin.pages.edit.video-edit', compact('video'));
+        $subjects = Subject::get();
+        return view('admin.pages.edit.video-edit', compact('video','subjects'));
     }
 
     public function update(Request $request, $id)
     {
         $video = Video::findOrFail($id);
 
-        // validate request
-        $request->validate([
-            'title'       => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'video'       => 'nullable|mimes:mp4|max:51200', // optional video upload, max 50MB
-        ]);
-
         $filePath = $video->file_path;
         $duration = $video->duration;
+        $thumbnailPath = $video->video_thumb;
         $uploadToken = $request->input('upload_token');
 
         // check if new video uploaded
@@ -210,15 +194,19 @@ class VideoController extends Controller
             }
 
             [$filePath, $duration] = $this->processVideo($request->file('video'), $uploadToken);
+            $thumbnailPath = $this->generateThumbnail($processedPath, 5);
+
         }
 
         // update db record
         $video->update([
-            'title'       => $request->title,
-            'description' => $request->description,
-            'file_path'   => $filePath,
-            'duration'    => $duration,
-            // status removed from edit as requested
+            'title'             => $request->title,
+            'description'       => $request->description,
+            'file_path'         => $filePath,
+            'duration'          => $duration,
+            'subject_id'        => $request->subject,
+            'google_form_link'  => $request->google_form_link,
+            'video_thumb'       => $thumbnailPath
         ]);
 
         if ($uploadToken) {
@@ -228,7 +216,7 @@ class VideoController extends Controller
         return response()->json([
             'message'  => 'Video updated successfully!',
             'id'       => $video->id,
-            'redirect' => route('videos.list'),
+            'redirect' => route('admin.videos.list'),
         ]);
     }
 
@@ -284,7 +272,7 @@ class VideoController extends Controller
 
         $video->delete();
 
-        return redirect()->route('videos.list')->with('success', 'Video deleted successfully');
+        return redirect()->route('admin.videos.list')->with('success', 'Video deleted successfully');
     }
 
     

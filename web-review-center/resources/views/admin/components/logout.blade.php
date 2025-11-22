@@ -42,3 +42,33 @@
         });
     });
 </script>
+
+@if(isset($adminProfileUrl))
+<script>
+    (function() {
+        function modifyLogoLink() {
+            // AdminLTE uses .brand-link for the logo link in sidebar
+            const brandLinks = document.querySelectorAll('.brand-link, a.navbar-brand');
+            brandLinks.forEach(function(link) {
+                if (link && link.href) {
+                    // Modify logo link to point to admin edit page
+                    // Check if it's the default dashboard/home link
+                    const href = link.getAttribute('href');
+                    if (!href || href === '#' || href === '/' || href.includes('dashboard') || href === window.location.origin || !href.includes('/admin/users/')) {
+                        link.href = '{{ $adminProfileUrl }}';
+                    }
+                }
+            });
+        }
+        
+        // Run multiple times to catch dynamically loaded elements
+        modifyLogoLink();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', modifyLogoLink);
+        }
+        setTimeout(modifyLogoLink, 100);
+        setTimeout(modifyLogoLink, 500);
+        setTimeout(modifyLogoLink, 1000);
+    })();
+</script>
+@endif

@@ -17,6 +17,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
+        
         return view('auth.login');
     }
 
@@ -33,7 +34,7 @@ class AuthenticatedSessionController extends Controller
             $admin = Auth::guard('admin')->user();
 
             if ($admin->role === 'super_admin') {
-                return redirect()->intended(route('dashboard'));
+                return redirect()->intended(route('admin.dashboard'));
 
             }    
         }

@@ -3,58 +3,70 @@
 @section('title', 'Dashboard')
 
 @section('css')
-    @vite('resources/css/app.css')
+@vite('resources/css/app.css')
 @endsection
 
 @section('content_header')
-    <h1>Dashboard</h1>
+    <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
 @stop
 
 @section('content')
 @include('admin.components.logout')
-    <main class="flex-1 p-6">
-        <!-- Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 flex flex-row">
-            <div class="bg-teal shadow rounded p-4">
-                <h2 class="text-white font-semibold">Total Users</h2>
-                <p class="text-2xl font-bold mt-2">{{ $totalAdminUser }}</p>
-            </div>
-            <div class="bg-maroon shadow rounded p-4">
-                <h2 class="text-white font-semibold">Videos</h2>
-                <p class="text-2xl font-bold mt-2">{{ $totalVideos }}</p>
-            </div>
-            <div class="bg-green shadow rounded p-4">
-                <h2 class="text-white font-semibold">Students</h2>
-                <p class="text-2xl font-bold mt-2">{{ $totalStudents }}</p>
-            </div>
-            <div class="bg-blue shadow rounded p-4">
-                <h2 class="text-white font-semibold">Subjects</h2>
-                <p class="text-2xl font-bold mt-2">{{ $totalSubjects ?? 0 }}</p>
-            </div>
-        </div>
 
-        <!-- Quick Actions -->
-        <div class="mt-8">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <a href="{{ route('videos.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center">
-                    Upload Video
-                </a>
-                <a href="{{ route('subjects.list') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-center">
-                    Manage Subjects
-                </a>
-                <a href="{{ route('users.list') }}" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded text-center">
-                    Manage Users
-                </a>
-                <a href="{{ route('students.list') }}" class="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded text-center">
-                    View Students
-                </a>
-                <a href="{{ route('notifications.list') }}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded text-center">
-                    Notifications
-                </a>
-            </div>
+<main class="flex-1 p-6 bg-gray-50 min-h-screen">
+    <!-- Top Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white shadow rounded-xl p-5 border-l-4 border-sky-500">
+            <p class="text-gray-600 font-semibold">Total Users</p>
+            <h2 class="text-3xl font-bold text-sky-700 mt-2">{{ $totalAdminUser }}</h2>
+            <p class="text-xs text-gray-500 mt-1">Compared to last week</p>
         </div>
-    </main>
+        <div class="bg-white shadow rounded-xl p-5 border-l-4 border-rose-500">
+            <p class="text-gray-600 font-semibold">Videos</p>
+            <h2 class="text-3xl font-bold text-rose-700 mt-2">{{ $totalVideos }}</h2>
+            <p class="text-xs text-gray-500 mt-1">Uploaded in total</p>
+        </div>
+        <div class="bg-white shadow rounded-xl p-5 border-l-4 border-emerald-500">
+            <p class="text-gray-600 font-semibold">Students</p>
+            <h2 class="text-3xl font-bold text-emerald-700 mt-2">{{ $totalStudents }}</h2>
+            <p class="text-xs text-gray-500 mt-1">Registered users</p>
+        </div>
+        <div class="bg-white shadow rounded-xl p-5 border-l-4 border-indigo-500">
+            <p class="text-gray-600 font-semibold">Subjects</p>
+            <h2 class="text-3xl font-bold text-indigo-700 mt-2">{{ $totalSubjects ?? 0 }}</h2>
+            <p class="text-xs text-gray-500 mt-1">Active subjects</p>
+        </div>
+    </div>
+
+
+    <!-- Quick Actions -->
+    <div class="bg-white shadow rounded-xl p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <a href="{{ route('admin.videos.create') }}" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
+                Upload Video
+            </a>
+            <a href="{{ route('admin.subjects.list') }}" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
+                Manage Subjects
+            </a>
+            <a href="{{ route('admin.users.list') }}" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
+                Manage Users
+            </a>
+            <a href="{{ route('admin.students.list') }}" class="bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
+                View Students
+            </a>
+            <a href="{{ route('admin.notifications.list') }}" class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
+                Notifications
+            </a>
+        </div>
+    </div>
+</main>
 @stop
 
+@section('scripts')
+@include('admin.components.admin-scripts')
 
+@if(auth()->check())
+    @include('admin.components.idle-logout')
+@endif
+@append

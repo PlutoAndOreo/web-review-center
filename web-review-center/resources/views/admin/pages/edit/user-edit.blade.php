@@ -9,7 +9,7 @@
 <br>
 <div class="max-w-lg mx-auto bg-white rounded-lg shadow p-8 mt-8">
     <div class="flex items-center justify-between mb-6">
-        <a href="{{ route('users.list') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800">
+        <a href="{{ route('admin.users.list') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800">
             <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
             </svg>
@@ -24,7 +24,7 @@
     @if(session('error'))
         <div class="mb-4 text-red-600">{{ session('error') }}</div>
     @endif
-    <form method="POST" action="{{ route('users.update', $admin->id) }}">
+    <form method="POST" action="{{ route('admin.users.update', $admin->id) }}">
         @csrf
         <div class="mb-4">
             <label for="first_name" class="block text-gray-700 mb-2">First Name</label>
@@ -73,3 +73,7 @@
 </div>
 <br>
 @stop
+
+@push('js')
+@include('admin.components.admin-scripts')
+@endpush

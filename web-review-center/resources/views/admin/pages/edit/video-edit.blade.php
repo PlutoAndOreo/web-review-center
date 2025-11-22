@@ -7,7 +7,7 @@
     <div class="card card-primary">
         <div class="card-header d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <a href="{{ route('videos.list') }}" class="btn btn-sm btn-outline-light mr-3">
+                <a href="{{ route('admin.videos.list') }}" class="btn btn-sm btn-outline-light mr-3">
                     <i class="fas fa-arrow-left"></i> Back
                 </a>
                 <h3 class="card-title mb-0">Edit Video</h3>
@@ -15,7 +15,7 @@
         </div>
 
         <!-- form start -->
-        <form action="{{ route('videos.update', $video->id) }}" method="POST" enctype="multipart/form-data" id="editVideoForm">
+        <form action="{{ route('admin.videos.update', $video->id) }}" method="POST" enctype="multipart/form-data" id="editVideoForm">
             @csrf
             <div class="card-body">
 
@@ -59,19 +59,31 @@
                         $currentFile = basename($video->file_path ?? '');
                     @endphp
                     @if($currentFile)
-                        <small class="form-text text-muted">Current file: {{ $currentFile }}</small>
+                        <small class="form-text text-muted ">Current file: {{ $currentFile }}</small>
                     @endif
                 </div>
 
-                <!-- Google Form -->
+                <!-- subject -->
                 <div class="form-group">
-                    <label for="google_form_upload">Google Form Upload (URL)</label>
+                    <label for="subject_id">Subject</label>
+                    <select id="subject_id" name="subject" class="form-control" required>
+                        @foreach($subjects as $subject)
+                        <option value="{{ $subject->id }}" {{ $subject->id == $video->subject_id ? 'selected' : '' }}>
+                            {{ $subject->code }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Google Form Link -->
+                <div class="form-group">
+                    <label for="google_form_link">Google Form Link</label>
                     <input 
-                        type="url" 
+                        type="text" 
                         class="form-control" 
-                        name="google_form_upload" 
-                        id="google_form_upload"
-                        value="{{ old('google_form_upload', $video->google_form_upload) }}">
+                        name="google_form_link" 
+                        id="google_form_link"
+                        value="{{ old('google_form_link', $video->google_form_link) }}">
                 </div>
 
                 <!-- Thumbnail Preview -->
