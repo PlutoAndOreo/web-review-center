@@ -12,7 +12,7 @@ class NotificationController extends Controller
     public function index()
     {
         $notifications = Notification::with(['comment.student', 'comment.video', 'comment.admin'])
-            ->where('admin_id', auth()->id())
+            ->where('admin_id', auth()->guard('admin')->id())
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -21,7 +21,7 @@ class NotificationController extends Controller
 
     public function markAsRead($id)
     {
-        $notification = Notification::where('admin_id', auth()->id())
+        $notification = Notification::where('admin_id', auth()->guard('admin')->id())
             ->findOrFail($id);
         
         $notification->update(['is_read' => true]);
@@ -31,7 +31,7 @@ class NotificationController extends Controller
 
     public function markAllAsRead()
     {
-        Notification::where('admin_id', auth()->id())
+        Notification::where('admin_id', auth()->guard('admin')->id())
             ->where('is_read', false)
             ->update(['is_read' => true]);
 
@@ -40,7 +40,7 @@ class NotificationController extends Controller
 
     public function getUnreadCount()
     {
-        $count = Notification::where('admin_id', auth()->id())
+        $count = Notification::where('admin_id', auth()->guard('admin')->id())
             ->where('is_read', false)
             ->count();
 
@@ -49,7 +49,7 @@ class NotificationController extends Controller
 
     public function destroy($id)
     {
-        $notification = Notification::where('admin_id', auth()->id())
+        $notification = Notification::where('admin_id', auth()->guard('admin')->id())
             ->findOrFail($id);
         
         $notification->delete();
@@ -64,7 +64,7 @@ class NotificationController extends Controller
             'ids.*' => 'exists:rc_notifications,id'
         ]);
 
-        Notification::where('admin_id', auth()->id())
+        Notification::where('admin_id', auth()->guard('admin')->id())
             ->whereIn('id', $request->ids)
             ->delete();
 
@@ -77,7 +77,7 @@ class NotificationController extends Controller
             'reply' => 'required|string|max:1000',
         ]);
 
-        $notification = Notification::where('admin_id', auth()->id())
+        $notification = Notification::where('admin_id', auth()->guard('admin')->id())
             ->with('comment')
             ->findOrFail($id);
 
@@ -86,20 +86,16 @@ class NotificationController extends Controller
         if ($comment) {
             $comment->update([
                 'admin_reply' => $request->reply,
-                'admin_id' => auth()->id(),
+                'admin_id' => auth()->guard('admin')->id(),
                 'admin_replied_at' => now(),
             ]);
-
-            // Create notification for student about the reply
-            // You might want to add a student notifications table for this
-            // For now, we'll just update the comment
             
             return response()->json([
                 'success' => true,
                 'message' => 'Reply sent successfully',
                 'reply' => [
                     'content' => $comment->admin_reply,
-                    'admin_name' => auth()->user()->first_name . ' ' . auth()->user()->last_name,
+                    'admin_name' => auth()->guard('admin')->user()->first_name . ' ' . auth()->guard('admin')->user()->last_name,
                     'replied_at' => $comment->admin_replied_at->format('M d, Y H:i'),
                 ]
             ]);

@@ -51,7 +51,7 @@ class VideoController extends Controller
                 'subject_id'  => $request->subject_id,
                 'has_watermark' => $request->has_watermark ?? false,
                 'status'      => 'draft',
-                'user_id'     => auth()->id(),
+                'user_id'     => auth()->guard('admin')->id(),
             ]);
 
             if ($uploadToken) {
