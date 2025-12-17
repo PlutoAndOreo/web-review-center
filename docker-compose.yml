@@ -30,13 +30,12 @@ services:
     container_name: rc-db
     platform: linux/x86_64
     ports:
-      - "3307:3307" # replaced 3307 if there is conflict on this port. usuall value is 3306
+      - "3306:3306"
     environment:
       - "LANG=C.UTF-8"
       - "MYSQL_ROOT_PASSWORD=root" # replaced password on your desired value
       - "MYSQL_DATABASE=wrc_database" # replacead database name on your desired value
       - "MYSQL_PASSWORD=WRC2025"
-    command: --port=3307
     volumes:
       - type: volume
         source: mysql-volume
