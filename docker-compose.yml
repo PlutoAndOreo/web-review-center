@@ -50,7 +50,6 @@ services:
       - type: volume
         source: mysql-volume
         target: /var/lib/mysql
-
   queue-worker:
     build:
       context: ./infra/php
@@ -58,8 +57,7 @@ services:
     command: ["php", "artisan", "queue:work", "database", "--queue=default", "--sleep=1", "--timeout=120", "--tries=3", "--memory=256"]
     restart: always
     environment:
-      # ensure the app is in production mode and uses your .env defaults
-      APP_ENV=production
+      APP_ENV: "production"
     volumes:
       - ./web-review-center:/srv/app
     depends_on:
