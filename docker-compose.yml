@@ -9,7 +9,6 @@ services:
       - "443:443"
     volumes:
       - ./web-review-center:/srv/app 
-      - ./docker/nginx/conf:/etc/nginx/conf.d
       - ./docker/nginx/certs:/etc/letsencrypt
       - ./docker/nginx/www:/var/www/certbot
     depends_on:
