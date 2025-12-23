@@ -6,8 +6,12 @@ services:
     container_name: rc-backend
     ports:
       - "80:80"
+      - "443:443"
     volumes:
-      - ./web-review-center:/srv/app # replace project_name with your desired value
+      - ./web-review-center:/srv/app 
+      - ./docker/nginx/conf:/etc/nginx/conf.d
+      - ./docker/nginx/certs:/etc/letsencrypt
+      - ./docker/nginx/www:/var/www/certbot
     depends_on:
       - php
 
@@ -23,7 +27,13 @@ services:
       - ./web-review-center:/srv/app # replace project_name with your desired value
     depends_on:
       - mysql
-
+  
+  certbot:
+    image: certbot/certbot
+    container_name: rc-certbot
+    volumes:
+      - ./docker/nginx/certs:/etc/letsencrypt
+      - ./docker/nginx/www:/var/www/certbot
   mysql:
     build:
       context: ./infra/mysql
