@@ -39,6 +39,9 @@
                                 <tr>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Status</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Title</th>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -63,6 +66,20 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @forelse($videos as $video)
                                     <tr>
+                                        @if($video->status === 'Draft')
+                                        
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
+                                                {{ $video->status }}
+                                            </td>
+                                        @elseif ($video->status === 'Published')
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                                                {{ $video->status }}
+                                            </td>
+                                        @else
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300">
+                                                {{ $video->status }}
+                                            </td>
+                                        @endif
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             {{ $video->title }}
                                         </td>
