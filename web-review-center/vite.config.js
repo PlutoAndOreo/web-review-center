@@ -8,7 +8,7 @@ export default defineConfig({
                 'resources/css/app.css', 
                 'resources/css/admin/notifications.css',
                 'resources/css/student/comments.css',
-                'resources/js/admin/video-upload.css',
+                'resources/css/admin/video-upload.css',
                 'resources/js/app.js',
                 'resources/js/admin/notifications.js',
                 'resources/js/admin/video-list.js',
