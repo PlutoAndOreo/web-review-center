@@ -33,7 +33,7 @@
             </div>
             <div class="flex gap-4 mt-4">
                 <button id="playPauseBtn"
-                    class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition focus:outline-none"
+                    class="flex items-center justify-center w-12 h-12 rounded-full bg-red-600 text-white hover:bg-red-700 transition focus:outline-none"
                     aria-label="Play/Pause">
                     <svg id="playIcon" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2"
                         viewBox="0 0 24 24">
@@ -71,7 +71,7 @@
             <!-- Google Forms Section (Inline) -->
             @if($showForm && $formUrl)
                 <div id="googleFormSection" class="mt-8 w-full max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-                    <div class="bg-gradient-to-r from-green-600 to-green-700 text-white p-4">
+                    <div class="bg-gradient-to-r from-red-600 to-red-700 text-white p-4">
                         <h3 class="text-xl font-semibold">Complete Your Review</h3>
                         <p class="text-sm opacity-90 mt-1">
                             @if($retakeAllowed && $isCompleted)
@@ -94,21 +94,21 @@
                         <div class="flex items-center justify-between flex-wrap gap-4">
                             <p class="text-sm text-gray-600">After submitting the form, click the button below to mark as complete.</p>
                             <button id="markCompleteBtn"
-                                class="bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700 transition font-semibold whitespace-nowrap">
+                                class="bg-red-600 text-white py-2 px-6 rounded-lg hover:bg-red-700 transition font-semibold whitespace-nowrap">
                                 Mark as Complete
                             </button>
                         </div>
                     </div>
                 </div>
             @elseif($isCompleted && !$showForm && $formUrl)
-                <div id="completedSection" class="mt-8 w-full max-w-4xl mx-auto bg-green-50 border-2 border-green-200 rounded-lg p-6">
+                <div id="completedSection" class="mt-8 w-full max-w-4xl mx-auto bg-red-50 border-2 border-red-200 rounded-lg p-6">
                     <div class="flex items-center gap-3">
-                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         <div>
-                            <h3 class="text-xl font-semibold text-green-800">Review Completed</h3>
-                            <p class="text-sm text-green-600 mt-1">You have successfully completed this review. Thank you!</p>
+                            <h3 class="text-xl font-semibold text-red-800">Review Completed</h3>
+                            <p class="text-sm text-red-600 mt-1">You have successfully completed this review. Thank you!</p>
                         </div>
                     </div>
                 </div>
@@ -222,14 +222,14 @@
                             
                             // Show completion message
                             const completedHtml = `
-                                <div id="completedSection" class="mt-8 w-full max-w-4xl mx-auto bg-green-50 border-2 border-green-200 rounded-lg p-6">
+                                <div id="completedSection" class="mt-8 w-full max-w-4xl mx-auto bg-red-50 border-2 border-red-200 rounded-lg p-6">
                                     <div class="flex items-center gap-3">
-                                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
                                         <div>
-                                            <h3 class="text-xl font-semibold text-green-800">Review Completed</h3>
-                                            <p class="text-sm text-green-600 mt-1">Thank you for completing the review!</p>
+                                            <h3 class="text-xl font-semibold text-red-800">Review Completed</h3>
+                                            <p class="text-sm text-red-600 mt-1">Thank you for completing the review!</p>
                                         </div>
                                     </div>
                                 </div>

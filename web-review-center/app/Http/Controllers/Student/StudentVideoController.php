@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Student;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use App\Models\Video;
 
 class StudentVideoController extends Controller
@@ -32,42 +33,14 @@ class StudentVideoController extends Controller
             'isCompleted' => $isCompleted,
             'showForm' => $showForm,
             'retakeAllowed' => $retakeAllowed,
-            'video_title' => $video->title
+            'video_title' => $video->title,
         ]);
     }
 
-    // public function stream(Request $request, $id)
-    // {
-    //     // Lookup the processed/streamable path from DB by id
-    //     $video = \App\Models\Video::findOrFail($id);
-    //     $path = storage_path('app/private/' . ltrim($video->file_path, '/'));
-
-    //     $start = intval($request->query('start', 0));
-    //     $end   = intval($request->query('end', $start + 1024 * 1024));
-
-    //     $size = filesize($path);
-    //     if ($end >= $size) $end = $size - 1;
-    //     $length = $end - $start + 1;
-
-    //     $headers = [
-    //         'Content-Type' => 'video/mp4',
-    //         'Accept-Ranges' => 'bytes',
-    //         'Content-Range' => "bytes $start-$end/$size",
-    //         'Content-Length' => $length
-    //     ];
-
-    //     $stream = function() use ($path, $start, $length) {
-    //         $handle = fopen($path, 'rb');
-    //         fseek($handle, $start);
-    //         echo fread($handle, $length);
-    //         fclose($handle);
-    //     };
-
-    //     return response()->stream($stream, 206, $headers);
-    // }
+    
     public function stream(Request $request, $id)
     {
-        $video = \App\Models\Video::findOrFail($id);
+        $video = Video::findOrFail($id);
 
         if (!is_null($video->file_path)) {
             $path = storage_path('app/private/' . ltrim($video->file_path, '/'));

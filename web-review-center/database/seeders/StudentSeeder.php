@@ -16,9 +16,9 @@ class StudentSeeder extends Seeder
     {
         DB::table('rc_students')->insert([
             [
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'email' => 'john@example.com',
+                'first_name' => 'student',
+                'last_name' => 'test',
+                'email' => 'student@test.com',
                 'phone' => '09170000001',
                 'birthdate' => '2000-05-15',
                 'gender' => 'Male',
@@ -26,19 +26,8 @@ class StudentSeeder extends Seeder
                 'course' => 'Computer Science',
                 'created_at' => now(),
                 'updated_at' => now(),
+                'password' => Hash::make('test123'),
             ],
-            [
-                'first_name' => 'Jane',
-                'last_name' => 'Smith',
-                'email' => 'jane@example.com',
-                'phone' => '09170000002',
-                'birthdate' => '2001-09-22',
-                'gender' => 'Female',
-                'student_number' => 'STU-0002',
-                'course' => 'Information Technology',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
         ]);
     }
 }

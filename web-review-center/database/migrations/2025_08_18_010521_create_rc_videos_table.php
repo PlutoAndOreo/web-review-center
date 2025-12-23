@@ -16,12 +16,10 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('rc_admins');  
             $table->string('title');               
             $table->text('description')->nullable(); 
-            $table->string('file_path');           
-            $table->string('file_path_s3')->nullable();           
-            $table->unsignedInteger('duration')->nullable(); 
-            $table->enum('status', ['draft', 'published'])->default('draft');
+            $table->string('file_path')->nullable();           
+            $table->enum('status', ['Draft', 'Published','Failed','Processing'])->default('Draft');
             $table->string('google_form_upload')->nullable();
-            $table->string('video_thumb')->nullable();           
+            $table->string('video_thumb')->nullable();  
             $table->timestamps();
         });
     }

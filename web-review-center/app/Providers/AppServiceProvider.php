@@ -37,7 +37,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         app('events')->listen(BuildingMenu::class, function (BuildingMenu $event) {
-            $user = auth()->user();
+            $user = auth()->guard('admin')->user();
             $userName = $user ? ($user->first_name . ' ' . $user->last_name) : 'Profile';
             $profileUrl = $user ? "/admin/users/{$user->id}/edit" : "#";
             $logoutUrl = $user ? '/admin/logout' : '#';
