@@ -51,6 +51,22 @@ services:
         source: mysql-volume
         target: /var/lib/mysql
 
+  queue-worker:
+    build:
+      context: ./infra/php
+    container_name: rc-queue
+    command: ["php", "artisan", "queue:work", "database", "--queue=default", "--sleep=1", "--timeout=120", "--tries=3", "--memory=256"]
+    restart: always
+    environment:
+      # ensure the app is in production mode and uses your .env defaults
+      APP_ENV=production
+    volumes:
+      - ./web-review-center:/srv/app
+    depends_on:
+      - mysql
+    # Optional: if your php container sets working dir differently, add:
+    working_dir: /srv/app
+
 networks:
   default:
     driver: bridge
