@@ -52,23 +52,6 @@ class ProcessUploadVideo implements ShouldQueue
             $videoContentType = 'video/mp4';
             $thumbContentType = 'image/jpeg';
 
-            /** TODO  */
-            // Storage::disk('linode')->put(
-            //     $linodeVideoPath,
-            //     file_get_contents(Storage::disk('private')->path($processedPath)),[
-            //         'ContentType' => $videoContentType,
-            //         'ACL' => 'public-read',
-            //     ]
-            // );
-
-            // Storage::disk('linode')->put(
-            //     $linodeThumbPath,
-            //     file_get_contents(public_path($thumbnailPath)),[
-            //         'ContentType' => $thumbContentType,
-            //         'ACL' => 'public-read',
-            //     ]
-            // );  
-
             $video = Video::find($this->videoId);
 
             $video->update([
