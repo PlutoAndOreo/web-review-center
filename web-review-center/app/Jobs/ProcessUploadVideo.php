@@ -129,7 +129,7 @@ class ProcessUploadVideo implements ShouldQueue
             ->addFilter(['-movflags', '+frag_keyframe+empty_moov+default_base_moof']);
 
         $exporter->addWatermark(function (WatermarkFactory $watermark) {
-            $watermark->fromDisk('private')
+            $watermark->fromDisk('public')
                       ->open('watermark.png')
                       ->right(50)
                       ->bottom(50)
