@@ -63,10 +63,21 @@ return [
             'driver' => 'local',
             'root' => storage_path('app/private'),
             'visibility' => 'private',
-    ]   ,  
-
+        ],
+        
+        'linode' => [
+            'driver'        => 's3',
+            'key'           => env('LINODE_KEY'),
+            'secret'        => env('LINODE_SECRET'),
+            'region'        => env('LINODE_REGION'),
+            'endpoint'      => env('LINODE_ENDPOINT'),
+            'bucket'        => env('LINODE_BUCKET'),
+            'url'           => env('LINODE_BUCKET_URL'), 
+            'throw'         => true,
+            'visibility'    => null,
+            'use_path_style_endpoint' => true,
+        ],
     ],
-
     /*
     |--------------------------------------------------------------------------
     | Symbolic Links

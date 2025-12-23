@@ -20,7 +20,7 @@ class DashboardController extends Controller
         $subjects = Subject::where('is_active', true)->get();
         $selectedSubject = $request->get('subject');
         
-        $query = Video::with('subject');
+        $query = Video::where('status','=','Published')->with('subject');
 
         $histories = DB::table('rc_student_histories')
             ->where('student_id', $student->id)

@@ -75,6 +75,21 @@
                     </select>
                 </div>
 
+                <!-- Status -->
+                 @if($video->status != 'Processing')
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" name="status" class="form-control" required>
+                            <option value="draft" {{ $video->status === 'Draft' ? 'selected' : '' }}>
+                                Draft
+                            </option>
+                            <option value="published" {{ $video->status === 'Published' ? 'selected' : '' }}>
+                                Published
+                            </option>
+                        </select>
+                    </div>
+                @endif
+
                 <!-- Google Form Link -->
                 <div class="form-group">
                     <label for="google_form_link">Google Form Link</label>
@@ -134,54 +149,5 @@
                 e.target.nextElementSibling.innerText = 'Choose file';
             }
         });
-
-        (function(){
-            const form = document.getElementById('editVideoForm');
-            const btn = document.getElementById('btn-update');
-            const modal = document.getElementById('updateModal');
-            const labelEl = document.getElementById('updateLabel');
-            form.addEventListener('submit', function(e){
-                e.preventDefault();
-                const formData = new FormData(form);
-                // attach token for processing progress (server will handle caching)
-                const uploadToken = (Math.random().toString(36).slice(2)) + Date.now().toString(36);
-                formData.append('upload_token', uploadToken);
-
-                btn.disabled = true;
-                modal.classList.add('show');
-                labelEl.textContent = 'Submitting...';
-
-                const xhr = new XMLHttpRequest();
-                xhr.onreadystatechange = function(){
-                    if (xhr.readyState === 4) {
-                        btn.disabled = false;
-                        const isJSON = (xhr.getResponseHeader('Content-Type') || '').includes('application/json');
-                        let data = null;
-                        if (isJSON) {
-                            try { data = JSON.parse(xhr.responseText); } catch (_) {}
-                        }
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            labelEl.textContent = 'Completed';
-                            modal.classList.remove('show');
-                            if (data && data.redirect) {
-                                window.location.href = data.redirect;
-                            } else {
-                                window.location.reload();
-                            }
-                        } else if (xhr.status === 422 && data && data.errors) {
-                            modal.classList.remove('show');
-                            // show basic alerts for now; page has no field placeholders
-                            alert('Validation error. Please check your inputs.');
-                        } else {
-                            modal.classList.remove('show');
-                            alert('Update failed.');
-                        }
-                    }
-                };
-                xhr.open('POST', form.getAttribute('action'), true);
-                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                xhr.send(formData);
-            });
-        })();
     </script>
 @stop

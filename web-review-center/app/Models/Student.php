@@ -9,6 +9,7 @@ class Student extends Authenticatable
 {
     use HasFactory;
 
+    protected $guard = 'student';
     protected $table = 'rc_students';
 
     protected $fillable = [

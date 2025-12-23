@@ -54,7 +54,7 @@
                 <div>
                     <label class="block text-gray-700 font-semibold mb-1">Video File <span
                             class="text-red-500">*</span></label>
-                    <input type="file" name="video"
+                    <input type="file" name="video" accept="video/mp4"
                         class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 cursor-pointer focus:ring-2 focus:ring-blue-400 focus:outline-none">
                 </div>
                 @error('video')
