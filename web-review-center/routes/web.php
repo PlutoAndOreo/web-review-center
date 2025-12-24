@@ -23,6 +23,9 @@ use App\Http\Controllers\Student\DashboardController as StudentDashboardControll
 use App\Http\Controllers\Student\StudentVideoController;
 use App\Http\Controllers\Student\CommentController;
 
+    Route::get('/', function () {
+        return redirect()->route('student.login'); // route name for student login
+    });
 
     // Route::middleware('guest:admin')->group(function () {
         Route::post('admin/register', [RegisteredUserController::class, 'store']);
