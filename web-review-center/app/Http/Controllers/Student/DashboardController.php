@@ -75,9 +75,11 @@ class DashboardController extends Controller
         
             $student->password = Hash::make($request->password);
             $student->save();
-        
-        }
-        return back()->with('success', 'Password updated successfully.');
 
+            return back()->with('success', 'Password updated successfully.');
+        }
+
+        return back()->with('success', 'Updated successfully.');
     }
+    
 }
