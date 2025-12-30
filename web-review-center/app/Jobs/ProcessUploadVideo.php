@@ -81,7 +81,7 @@ class ProcessUploadVideo implements ShouldQueue
         
     }
 
-    private function processVideo(string $absoluteFilePath, int $videoId): string
+    private function processVideo(string $absoluteFilePath, int $videoId): array
     {
         $newFileName = uniqid() . '.mp4';
         $storedPath = 'uploads/' . $newFileName;
@@ -90,8 +90,6 @@ class ProcessUploadVideo implements ShouldQueue
             $storedPath,
             file_get_contents($absoluteFilePath)
         );
-
-        $media = FFMpeg::fromDisk('private')->open($storedPath);
 
         $today = date('Y-m-d');
         $videoStreamPath = "videos/{$today}/rc_video_{$videoId}.mp4";
@@ -111,7 +109,7 @@ class ProcessUploadVideo implements ShouldQueue
 
         Log::info("Adding watermark to video ID: {$videoId}");
         $exporter->addWatermark(function (WatermarkFactory $watermark) {
-            $watermark->open(public_path('assets/watermark.png'))
+            $watermark->open(public_path('assets/watermark.png'), 'local')
                 ->right(50)
                 ->bottom(50)
                 ->width(200);
