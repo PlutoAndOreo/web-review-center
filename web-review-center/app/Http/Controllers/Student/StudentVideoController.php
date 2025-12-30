@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Models\Video;
+use App\Models\Subject;
 
 class StudentVideoController extends Controller
 {
@@ -36,8 +37,6 @@ class StudentVideoController extends Controller
             'video_title' => $video->title,
         ]);
     }
-
-    
     public function stream(Request $request, $id)
     {
         $video = Video::findOrFail($id);
@@ -158,8 +157,6 @@ class StudentVideoController extends Controller
         ]);
     }
 
-    
-
     // public function getVideoFileSize($id) {
     //     $video = \App\Models\Video::findOrFail($id);
     //     $filePath = storage_path('app/private/' . ltrim($video->file_path, '/'));
@@ -197,4 +194,29 @@ class StudentVideoController extends Controller
 
     //     return response()->stream($stream, 206, $headers);
     // }
+    public function list()
+    {
+        $student = auth()->guard('student')->user();
+
+        $subjects = Subject::where('is_active', true)->get();
+        
+        $query = Video::where('status','=','Published')->with('subject');
+
+        $histories = DB::table('rc_student_histories')
+            ->where('student_id', $student->id)
+            ->join('rc_videos', 'rc_student_histories.video_id', '=', 'rc_videos.id')
+            ->leftJoin('rc_subjects', 'rc_videos.subject_id', '=', 'rc_subjects.id')
+            ->select(
+                'rc_student_histories.*',
+                'rc_videos.id as video_id',
+                'rc_videos.title as video_title',
+                'rc_videos.description as video_description',
+                'rc_subjects.name as subject_name'
+            )
+            ->orderBy('rc_videos.created_at', 'desc')
+            ->get();
+        $videos = $query->orderByDesc('created_at')->paginate(9);
+
+        return view('student.pages.videos', compact('subjects','videos'));
+    }
 }
