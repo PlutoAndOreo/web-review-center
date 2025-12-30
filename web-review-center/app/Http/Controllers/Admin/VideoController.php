@@ -101,16 +101,10 @@ class VideoController extends Controller
 
         $withVideoUpload = false;
 
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'subject' => 'required|exists:rc_subjects,id',
-            'status' => 'nullable|in:Draft,Processing,Published,Failed',
-            'video' => 'nullable|file|mimetypes:video/mp4|max:1024000', 
-        ]);
         DB::beginTransaction();
 
         try {
+
             if ($request->hasFile('video')) {
                 $file = $request->file('video');
     
@@ -118,7 +112,6 @@ class VideoController extends Controller
                 $absoluteTempPath = Storage::disk('private')->path($tempPath);
     
                 Log::info("Dispatching Process VideoJob for video ID: {$video->id}");
-    
                 ProcessUploadVideo::dispatch(
                     $video->id,
                     $absoluteTempPath,
@@ -172,7 +165,9 @@ class VideoController extends Controller
             }
         }
 
-        $video->delete();
+        
+
+        // $video->delete();
 
         return redirect()->route('admin.videos.list')->with('success', 'Video deleted successfully');
     }
