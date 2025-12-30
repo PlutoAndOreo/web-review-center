@@ -109,10 +109,11 @@ class ProcessUploadVideo implements ShouldQueue
 
         Log::info("Adding watermark to video ID: {$videoId}");
         $exporter->addWatermark(function (WatermarkFactory $watermark) {
-            $watermark->open(public_path('assets/watermark.png'), 'local')
-                ->right(50)
-                ->bottom(50)
-                ->width(200);
+            $watermark->fromDisk('public')
+                      ->open('watermark.png')
+                      ->right(10)
+                      ->bottom(10)
+                      ->width(100);
         });
 
         Log::info("Saving processed video for ID: {$videoId}");
@@ -123,7 +124,7 @@ class ProcessUploadVideo implements ShouldQueue
     }
 
 
-    private function generateThumbnail(string $videoPath, int $second = 5, int $videoID): string
+    private function generateThumbnail(string $videoPath, int $second = 10, int $videoID): string
     {
         $today = date('Y-m-d');
         $thumbnailRelative = 'thumbnails/review_center_video_' . $videoID . '_' . $today . '.jpg';
