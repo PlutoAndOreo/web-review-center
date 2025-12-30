@@ -44,8 +44,6 @@ class ProcessUploadVideo implements ShouldQueue
             Log::info("Uploading to Linode Server");
 
             Storage::disk('private')->makeDirectory('videos');
-            $linodeVideoPath = 'videos/' . basename($processedPath);
-            $linodeThumbPath = 'thumbnails/' . basename($thumbnailPath);
 
             Log::info("Upload linode video");
 
@@ -111,12 +109,15 @@ class ProcessUploadVideo implements ShouldQueue
             ->addFilter(['-c:a', 'aac'])
             ->addFilter(['-movflags', '+frag_keyframe+empty_moov+default_base_moof']);
 
+        Log::info("Adding watermark to video ID: {$videoId}");
         $exporter->addWatermark(function (WatermarkFactory $watermark) {
-            $watermark->open(storage_path('/watermark.png'))
-                      ->right(50)
-                      ->bottom(50)
-                      ->width(200);
+            $watermark->open(public_path('assets/watermark.png'))
+                ->right(50)
+                ->bottom(50)
+                ->width(200);
         });
+
+        Log::info("Saving processed video for ID: {$videoId}");
 
         $exporter->save($videoStreamPath);
 
