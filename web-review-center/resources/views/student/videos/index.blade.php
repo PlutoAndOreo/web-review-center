@@ -101,14 +101,14 @@
                     </div>
                 </div>
             @elseif($isCompleted && !$showForm && $formUrl)
-                <div id="completedSection" class="mt-8 w-full max-w-4xl mx-auto bg-red-50 border-2 border-red-200 rounded-lg p-6">
+                <div id="completedSection" class="mt-8 w-full max-w-4xl mx-auto bg-green-50 border-2 border-green-200 rounded-lg p-6">
                     <div class="flex items-center gap-3">
-                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         <div>
-                            <h3 class="text-xl font-semibold text-red-800">Review Completed</h3>
-                            <p class="text-sm text-red-600 mt-1">You have successfully completed this review. Thank you!</p>
+                            <h3 class="text-xl font-semibold text-green-800">Review Completed</h3>
+                            <p class="text-sm text-green-600 mt-1">You have successfully completed this review. Thank you!</p>
                         </div>
                     </div>
                 </div>

@@ -100,6 +100,7 @@ Route::get('admin/videos/progress/{token}', [VideoController::class, 'progress']
         Route::post('/info', [StudentDashboardController::class, 'update'])->name('updateInfo');
 
         // Videos
+        Route::get('/videos/list', [StudentVideoController::class, 'list'])->name('videos.list');
         Route::get('/videos/{id}', [StudentVideoController::class, 'index'])->whereNumber('id')->name('videos');
         Route::get('/video-file-size/{id}', [StudentVideoController::class, 'getVideoFileSize'])->name('video.size');
         Route::get('/video-chunk/{id}', [StudentVideoController::class, 'stream'])->name('video.chunk');
