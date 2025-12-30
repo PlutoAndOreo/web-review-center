@@ -95,7 +95,7 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             @if($video->video_thumb)
-                                                <img src="{{ url(ltrim($video->video_thumb, '/')) }}"
+                                                <img src="{{ Storage::url($video->video_thumb) }}"
                                                     alt="Video Thumbnail"
                                                     class="w-20 h-12">
                                             @else

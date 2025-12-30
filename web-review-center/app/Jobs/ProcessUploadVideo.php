@@ -136,15 +136,6 @@ class ProcessUploadVideo implements ShouldQueue
             ->toDisk('public')
             ->save($thumbnailRelative);
 
-        $source = Storage::disk('public')->path($thumbnailRelative);
-        $destination = public_path($thumbnailRelative);
-
-        if (!is_dir(dirname($destination))) {
-            mkdir(dirname($destination), 0775, true);
-        }
-
-        rename($source, $destination);
-
         return $thumbnailRelative;
     }
 }

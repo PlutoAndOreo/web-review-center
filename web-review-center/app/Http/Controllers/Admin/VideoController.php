@@ -159,15 +159,10 @@ class VideoController extends Controller
             Storage::disk('private')->delete($video->file_path);
         }
         if ($video->video_thumb) {
-            $publicThumbPath = public_path($video->video_thumb);
-            if (file_exists($publicThumbPath)) {
-                unlink($publicThumbPath);
-            }
+            Storage::disk('public')->delete($video->video_thumb);
         }
 
-        
-
-        // $video->delete();
+        $video->delete();
 
         return redirect()->route('admin.videos.list')->with('success', 'Video deleted successfully');
     }
