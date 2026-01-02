@@ -41,13 +41,9 @@ class StudentVideoController extends Controller
     {
         $video = Video::findOrFail($id);
 
-        if (!is_null($video->file_path)) {
-            $path = storage_path('app/private/' . ltrim($video->file_path, '/'));
+        if (Storage::disk('private')->exists($video->file_path)){
+            $path = Storage::disk('private')->path($video->file_path);
         } else {
-            return response()->json(['error' => 'File path is null'], 404);
-        }
-
-        if (!file_exists($path)) {
             return response()->json(['error' => 'File not found'], 404);
         }
 
