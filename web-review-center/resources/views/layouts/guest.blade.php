@@ -28,6 +28,7 @@
     <div class="bg-blur"></div>
 
     @yield('content')
+    @stack('js')
 
 </body>
 </html>
