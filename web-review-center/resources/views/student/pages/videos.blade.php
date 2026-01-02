@@ -15,11 +15,11 @@
 
             {{-- Subject Header --}}
             <button type="button" class="w-full flex justify-between items-center px-6 py-4 
-                           bg-red-50 hover:bg-red-100 text-gray-800 font-semibold transition"
+                           bg-blue-50 hover:bg-blue-100 text-gray-800 font-semibold transition"
                 onclick="toggleDropdown('subject-{{ $subject->id }}')">
 
                 <span class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" stroke-width="2"
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2"
                         viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6" />
                     </svg>
@@ -41,8 +41,8 @@
                         @foreach($subjectVideos as $video)
 
                             <a href="{{ route('student.videos', ['id' => $video->id]) }}"
-                                class="group block bg-white border border-rose-100 rounded-xl overflow-hidden 
-                                          hover:shadow-md hover:border-rose-300 transition">
+                                class="group block bg-white border border-blue-100 rounded-xl overflow-hidden 
+                                          hover:shadow-md hover:border-blue-300 transition">
 
                                 <div class="relative">
                                     <img src="{{ Storage::url($video->video_thumb) }}"
