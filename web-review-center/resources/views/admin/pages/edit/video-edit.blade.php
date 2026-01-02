@@ -106,7 +106,7 @@
                 <div class="form-group">
                     <label>Current Thumbnail</label>
                     <div>
-                        <img src="{{ url(ltrim($video->video_thumb, '/')) }}" alt="Thumbnail" style="width: 160px; height: 90px; object-fit: cover; border-radius: 6px;" />
+                        <img src="{{ Storage::url($video->video_thumb) }}" alt="Thumbnail" style="width: 160px; height: 90px; object-fit: cover; border-radius: 6px;" />
                     </div>
                 </div>
                 @endif
