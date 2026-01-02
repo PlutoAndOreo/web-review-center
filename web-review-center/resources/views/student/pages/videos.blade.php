@@ -45,7 +45,7 @@
                                           hover:shadow-md hover:border-rose-300 transition">
 
                                 <div class="relative">
-                                    <img src="{{ url(ltrim($video->video_thumb, '/')) }}"
+                                    <img src="{{ Storage::url($video->video_thumb) }}"
                                         alt="{{ $video->title }}" class="w-full h-40 object-cover">
                                     <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition">
                                     </div>
