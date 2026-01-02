@@ -44,6 +44,10 @@ class ProcessUploadVideo implements ShouldQueue
             Log::info("Uploading to Linode Server");
 
             Storage::disk('private')->makeDirectory('videos');
+            
+            // Set directory permissions for www-data
+            $videosDir = Storage::disk('private')->path('videos');
+            $this->setFilePermissions($videosDir, true);
 
             Log::info("Upload linode video");
 
@@ -90,6 +94,10 @@ class ProcessUploadVideo implements ShouldQueue
             $storedPath,
             file_get_contents($absoluteFilePath)
         );
+        
+        // Set file permissions for www-data
+        $storedFilePath = Storage::disk('private')->path($storedPath);
+        $this->setFilePermissions($storedFilePath);
 
         $today = date('Y-m-d');
         $videoStreamPath = "videos/{$today}/rc_video_{$videoId}.mp4";
@@ -119,6 +127,14 @@ class ProcessUploadVideo implements ShouldQueue
         Log::info("Saving processed video for ID: {$videoId}");
 
         $exporter->save($videoStreamPath);
+        
+        // Set file permissions for www-data after saving
+        $savedVideoPath = Storage::disk('private')->path($videoStreamPath);
+        $this->setFilePermissions($savedVideoPath);
+        
+        // Ensure parent directory has correct permissions
+        $videoDir = dirname($savedVideoPath);
+        $this->setFilePermissions($videoDir, true);
 
         return [$videoStreamPath, $storedPath];
     }
@@ -135,7 +151,45 @@ class ProcessUploadVideo implements ShouldQueue
             ->export()
             ->toDisk('public')
             ->save($thumbnailRelative);
+        
+        // Set file permissions for www-data after saving thumbnail
+        $thumbnailPath = Storage::disk('public')->path($thumbnailRelative);
+        $this->setFilePermissions($thumbnailPath);
+        
+        // Ensure thumbnails directory has correct permissions
+        $thumbnailsDir = dirname($thumbnailPath);
+        $this->setFilePermissions($thumbnailsDir, true);
 
         return $thumbnailRelative;
+    }
+
+    /**
+     * Set file permissions for www-data user
+     * 
+     * @param string $path File or directory path
+     * @param bool $isDirectory Whether the path is a directory
+     * @return bool
+     */
+    private function setFilePermissions(string $path, bool $isDirectory = false): bool
+    {
+        if (!file_exists($path)) {
+            return false;
+        }
+        
+        try {
+            // Set permissions: 0644 for files, 0755 for directories
+            $mode = $isDirectory ? 0755 : 0644;
+            chmod($path, $mode);
+            
+            // Try to set ownership to www-data (may fail if not running as root)
+            // Use @ to suppress errors if chown fails
+            @chown($path, 'www-data');
+            @chgrp($path, 'www-data');
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::warning("Failed to set permissions for {$path}: " . $e->getMessage());
+            return false;
+        }
     }
 }

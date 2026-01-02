@@ -41,6 +41,11 @@ class VideoController extends Controller
 
             $tempPath = $file->store('uploads/tmp', 'private'); 
             $absoluteTempPath = Storage::disk('private')->path($tempPath);
+            
+            // Set file permissions for www-data
+            $this->setFilePermissions($absoluteTempPath);
+            $tmpDir = dirname($absoluteTempPath);
+            $this->setFilePermissions($tmpDir, true);
 
             $video = Video::create([
                 'title'              => $request->title,
@@ -110,6 +115,11 @@ class VideoController extends Controller
     
                 $tempPath = $file->store('uploads/tmp', 'private'); 
                 $absoluteTempPath = Storage::disk('private')->path($tempPath);
+                
+                // Set file permissions for www-data
+                $this->setFilePermissions($absoluteTempPath);
+                $tmpDir = dirname($absoluteTempPath);
+                $this->setFilePermissions($tmpDir, true);
     
                 Log::info("Dispatching Process VideoJob for video ID: {$video->id}");
                 ProcessUploadVideo::dispatch(
@@ -165,5 +175,35 @@ class VideoController extends Controller
         $video->delete();
 
         return redirect()->route('admin.videos.list')->with('success', 'Video deleted successfully');
+    }
+
+    /**
+     * Set file permissions for www-data user
+     * 
+     * @param string $path File or directory path
+     * @param bool $isDirectory Whether the path is a directory
+     * @return bool
+     */
+    private function setFilePermissions(string $path, bool $isDirectory = false): bool
+    {
+        if (!file_exists($path)) {
+            return false;
+        }
+        
+        try {
+            // Set permissions: 0644 for files, 0755 for directories
+            $mode = $isDirectory ? 0755 : 0644;
+            chmod($path, $mode);
+            
+            // Try to set ownership to www-data (may fail if not running as root)
+            // Use @ to suppress errors if chown fails
+            @chown($path, 'www-data');
+            @chgrp($path, 'www-data');
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::warning("Failed to set permissions for {$path}: " . $e->getMessage());
+            return false;
+        }
     }
 }
