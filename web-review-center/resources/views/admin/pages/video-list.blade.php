@@ -1,11 +1,13 @@
 @extends('adminlte::page')
 
 @section('title', 'Video List')
-@section('css')
-    @vite('resources/css/app.css')
-@endsection
+
+    @section('css')
+        @vite('resources/css/app.css')
+    @endsection
 
     @section('content')
+    @include('admin.components.logout')
 
     <div class="min-h-screen bg-gray-100 py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -106,7 +108,7 @@
                                         <td class="px-6 py-4 text-sm text-gray-500">
                                             @if($video->google_form_link)
                                                 <a href="{{ $video->google_form_link }}" target="_blank"
-                                                    class="text-blue-600 hover:underline">
+                                                    class="text-blue-600 hover:underline truncate">
                                                     {{ Str::limit($video->google_form_link, 30) }}
                                                 </a>
                                             @else
