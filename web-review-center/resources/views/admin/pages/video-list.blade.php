@@ -1,6 +1,6 @@
-@extends('student.layouts.app')
+@extends('adminlte::page')
 
-@section('title', 'Student Info')
+@section('title', 'Video List')
 @section('css')
     @vite('resources/css/app.css')
 @endsection
