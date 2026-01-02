@@ -7,7 +7,7 @@
 
 
 <!-- Welcome Box -->
-<div class="bg-red-500 rounded-xl text-white p-10 flex justify-between items-center m-2">
+<div class="bg-blue-800 rounded-xl text-white p-10 flex justify-between items-center m-2">
     <div>
         <p class="text-sm">{{ now()->format('F j, Y') }}</p>
         <h1 class="text-2xl font-bold mt-1">Welcome back,
