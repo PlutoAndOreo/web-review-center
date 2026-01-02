@@ -38,28 +38,6 @@
         </div>
     </div>
 
-
-    <!-- Quick Actions -->
-    <div class="bg-white shadow rounded-xl p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <a href="{{ route('admin.videos.create') }}" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
-                Upload Video
-            </a>
-            <a href="{{ route('admin.subjects.list') }}" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
-                Manage Subjects
-            </a>
-            <a href="{{ route('admin.users.list') }}" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
-                Manage Users
-            </a>
-            <a href="{{ route('admin.students.list') }}" class="bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
-                View Students
-            </a>
-            <a href="{{ route('admin.notifications.list') }}" class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
-                Notifications
-            </a>
-        </div>
-    </div>
 </main>
 @stop
 
