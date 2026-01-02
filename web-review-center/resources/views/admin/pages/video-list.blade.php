@@ -1,13 +1,11 @@
-@extends('adminlte::page')
+@extends('student.layouts.app')
 
-@section('title', 'Video List')
-
+@section('title', 'Student Info')
 @section('css')
-@vite('resources/css/app.css')
-    @endsection
+    @vite('resources/css/app.css')
+@endsection
 
     @section('content')
-    @include('admin.components.logout')
 
     <div class="min-h-screen bg-gray-100 py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

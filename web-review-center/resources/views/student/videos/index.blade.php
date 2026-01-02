@@ -89,8 +89,8 @@
     <!-- Main content -->
     <section class="content">
         <div class="container-fluid">
-            <div class="row">
-                <div class="col-12">
+            <div class="row ">
+                <div class="col-12 col-lg-10 col-xl-8">
                     <!-- Video Player Card -->
                     <div class="card card-primary card-outline">
                         <div class="card-header">
