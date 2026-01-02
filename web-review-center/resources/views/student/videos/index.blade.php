@@ -2,146 +2,249 @@
 
 @push('styles')
     @vite('resources/css/student/comments.css')
-        <style>
-            :fullscreen #videoContainer {
-                background-color: black;
-                display: flex;
-                align-items: center;
+    <!-- AdminLTE CSS -->
+    <link rel="stylesheet" href="{{ asset('vendor/adminlte/dist/css/adminlte.min.css') }}">
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :fullscreen #videoContainer {
+            background-color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #videoContainer {
+            position: relative;
+            width: 100%;
+            background: #000;
+        }
+        
+        #videoPlayer {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .video-controls {
+                flex-wrap: wrap;
                 justify-content: center;
             }
-
-        </style>
-    @endpush
-
-    @section('content')
-    <div class="container mx-auto py-8">
-        <div class="flex items-center mb-6 w-full max-w-2xl mx-auto">
-            <a href="{{ route('student.dashboard') }}"
-                class="flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 font-semibold transition">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-                Back
-            </a>
-            <h1 class="text-2xl font-bold ml-4">{{ $video_title }}</h1>
-        </div>
-        <div class="flex flex-col items-center">
-            <div id="videoContainer" class="relative w-full max-w-2xl bg-black rounded-lg shadow-lg overflow-hidden">
-                <video id="videoPlayer" class="w-full h-auto rounded-t-lg" controlsList="nodownload" preload="metadata"
-                    oncontextmenu="return false"
-                    src="{{ route('student.video.stream', ['id' => $videoId]) }}"></video>
-            </div>
-            <div class="flex gap-4 mt-4">
-                <button id="playPauseBtn"
-                    class="flex items-center justify-center w-12 h-12 rounded-full bg-red-600 text-white hover:bg-red-700 transition focus:outline-none"
-                    aria-label="Play/Pause">
-                    <svg id="playIcon" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 5v14l11-7z" />
-                    </svg>
-                    <svg id="pauseIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" stroke-width="2"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 4h4v16H6zm8 0h4v16h-4z" />
-                    </svg>
-                </button>
-                <button id="fullscreenBtn"
-                    class="flex items-center justify-center w-12 h-12 rounded-full bg-gray-700 text-white hover:bg-gray-800 transition focus:outline-none"
-                    aria-label="Fullscreen">
-                    <svg id="fsEnterIcon" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M8 3H5a2 2 0 0 0-2 2v3m0 8v3a2 2 0 0 0 2 2h3m8-16h3a2 2 0 0 1 2 2v3m0 8v3a2 2 0 0 1-2 2h-3" />
-                    </svg>
-                    <svg id="fsExitIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" stroke-width="2"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M16 3h3a2 2 0 0 1 2 2v3m0 8v3a2 2 0 0 1-2 2h-3m-8-16H5a2 2 0 0 0-2 2v3m0 8v3a2 2 0 0 0 2 2h3" />
-                    </svg>
-                </button>
-                <button id="rollbackBtn"
-                    class="hidden items-center justify-center w-12 h-12 rounded-full bg-yellow-600 text-white hover:bg-yellow-700 transition focus:outline-none"
-                    aria-label="Exit Fullscreen">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M16 3h3a2 2 0 0 1 2 2v3m0 8v3a2 2 0 0 1-2 2h-3m-8-16H5a2 2 0 0 0-2 2v3m0 8v3a2 2 0 0 0 2 2h3" />
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Google Forms Section (Inline) -->
-            @if($showForm && $formUrl)
-                <div id="googleFormSection" class="mt-8 w-full max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-                    <div class="bg-gradient-to-r from-red-600 to-red-700 text-white p-4">
-                        <h3 class="text-xl font-semibold">Complete Your Review</h3>
-                        <p class="text-sm opacity-90 mt-1">
-                            @if($retakeAllowed && $isCompleted)
-                                Retake: Please complete the form again.
-                            @else
-                                Please complete the form below after watching the video.
-                            @endif
-                        </p>
-                    </div>
-                    <div class="p-4">
-                        <iframe 
-                            id="googleFormIframe"
-                            src="{{ $formUrl }}" 
-                            width="100%" 
-                            height="600" 
-                            frameborder="0"
-                            class="rounded-lg border border-gray-200">Loading ...</iframe>
-                    </div>
-                    <div class="p-4 border-t bg-gray-50">
-                        <div class="flex items-center justify-between flex-wrap gap-4">
-                            <p class="text-sm text-gray-600">After submitting the form, click the button below to mark as complete.</p>
-                            <button id="markCompleteBtn"
-                                class="bg-red-600 text-white py-2 px-6 rounded-lg hover:bg-red-700 transition font-semibold whitespace-nowrap">
-                                Mark as Complete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            @elseif($isCompleted && !$showForm && $formUrl)
-                <div id="completedSection" class="mt-8 w-full max-w-4xl mx-auto bg-green-50 border-2 border-green-200 rounded-lg p-6">
-                    <div class="flex items-center gap-3">
-                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <div>
-                            <h3 class="text-xl font-semibold text-green-800">Review Completed</h3>
-                            <p class="text-sm text-green-600 mt-1">You have successfully completed this review. Thank you!</p>
-                        </div>
-                    </div>
-                </div>
-            @endif
             
-            @if(!$formUrl)
-                <div class="mt-8 w-full max-w-4xl mx-auto bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
-                    <p class="text-center text-yellow-800">No form available for this video.</p>
+            .video-controls button {
+                margin: 5px;
+            }
+            
+            .card-footer .row {
+                flex-direction: column;
+            }
+            
+            .card-footer .col-md-4 {
+                width: 100%;
+                margin-top: 10px;
+            }
+            
+            .card-footer .col-md-8 {
+                width: 100%;
+            }
+            
+            .embed-responsive {
+                min-height: 400px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .content-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .breadcrumb {
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+@endpush
+
+@section('content')
+<div class="content-wrapper">
+    <!-- Content Header -->
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>{{ $video_title }}</h1>
                 </div>
-            @endif
-
-            <!-- Comments Section -->
-            <div class="mt-8 w-full max-w-2xl comments-section">
-                <h3>Comments</h3>
-
-                <!-- Comment Form -->
-                <form id="commentForm" class="comment-form">
-                    @csrf
-                    <textarea id="commentContent" name="content" rows="3"
-                        placeholder="Share your thoughts about this video..."></textarea>
-                    <button type="submit">Post Comment</button>
-                </form>
-
-                <!-- Comments List -->
-                <div id="commentsList" class="comments-list">
-                    <!-- Comments will be loaded here -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{{ route('student.dashboard') }}">Home</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('student.videos.list') }}">Videos</a></li>
+                        <li class="breadcrumb-item active">{{ Str::limit($video_title, 30) }}</li>
+                    </ol>
                 </div>
             </div>
-
         </div>
-    </div>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <!-- Video Player Card -->
+                    <div class="card card-primary card-outline">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-play-circle mr-1"></i>
+                                Video Player
+                            </h3>
+                            <div class="card-tools">
+                                <a href="{{ route('student.videos.list') }}" class="btn btn-sm btn-default">
+                                    <i class="fas fa-arrow-left"></i> Back
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="videoContainer" class="w-100">
+                                <video id="videoPlayer" class="w-100" controlsList="nodownload" preload="metadata"
+                                    oncontextmenu="return false"
+                                    src="{{ route('student.video.stream', ['id' => $videoId]) }}"></video>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-center align-items-center video-controls">
+                                <button id="playPauseBtn" class="btn btn-danger btn-sm mr-2" aria-label="Play/Pause">
+                                    <i id="playIcon" class="fas fa-play"></i>
+                                    <i id="pauseIcon" class="fas fa-pause d-none"></i>
+                                </button>
+                                <button id="fullscreenBtn" class="btn btn-secondary btn-sm" aria-label="Fullscreen">
+                                    <i id="fsEnterIcon" class="fas fa-expand"></i>
+                                    <i id="fsExitIcon" class="fas fa-compress d-none"></i>
+                                </button>
+                                <button id="rollbackBtn" class="btn btn-warning btn-sm ml-2 d-none" aria-label="Exit Fullscreen">
+                                    <i class="fas fa-compress"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Google Forms Section -->
+                    @if($showForm && $formUrl)
+                        <div class="card card-success card-outline" id="googleFormSection">
+                            <div class="card-header bg-danger">
+                                <h3 class="card-title">
+                                    <i class="fas fa-clipboard-list mr-1"></i>
+                                    Complete Your Review
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="icon fas fa-info-circle"></i>
+                                    @if($retakeAllowed && $isCompleted)
+                                        <strong>Retake:</strong> Please complete the form again.
+                                    @else
+                                        Please complete the form below after watching the video.
+                                    @endif
+                                </div>
+                                <div class="embed-responsive embed-responsive-16by9">
+                                    <iframe 
+                                        id="googleFormIframe"
+                                        src="{{ $formUrl }}" 
+                                        class="embed-responsive-item"
+                                        frameborder="0">Loading ...</iframe>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="row">
+                                    <div class="col-12 col-md-8">
+                                        <p class="text-muted mb-0">
+                                            <small>After submitting the form, click the button below to mark as complete.</small>
+                                        </p>
+                                    </div>
+                                    <div class="col-12 col-md-4 text-right">
+                                        <button id="markCompleteBtn" class="btn btn-danger btn-block">
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                            Mark as Complete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @elseif($isCompleted && !$showForm && $formUrl)
+                        <div class="card card-success" id="completedSection">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    Review Completed
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-success mb-0">
+                                    <i class="icon fas fa-check"></i>
+                                    You have successfully completed this review. Thank you!
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                    
+                    @if(!$formUrl)
+                        <div class="card card-warning">
+                            <div class="card-body">
+                                <div class="alert alert-warning mb-0">
+                                    <i class="icon fas fa-exclamation-triangle"></i>
+                                    No form available for this video.
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Comments Section -->
+                    <div class="card card-primary card-outline">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-comments mr-1"></i>
+                                Comments
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <!-- Comment Form -->
+                            <form id="commentForm" class="mb-4">
+                                @csrf
+                                <div class="form-group">
+                                    <label for="commentContent">Share your thoughts about this video</label>
+                                    <textarea 
+                                        id="commentContent" 
+                                        name="content" 
+                                        class="form-control" 
+                                        rows="3"
+                                        placeholder="Write your comment here..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane mr-1"></i>
+                                    Post Comment
+                                </button>
+                            </form>
+
+                            <hr>
+
+                            <!-- Comments List -->
+                            <div id="commentsList">
+                                <div class="text-center text-muted py-3">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading comments...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
 
     @push('js')
+        <!-- AdminLTE JS -->
+        <script src="{{ asset('vendor/adminlte/dist/js/adminlte.min.js') }}"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script>
             const video = document.getElementById('videoPlayer');
             const playPauseBtn = document.getElementById('playPauseBtn');
@@ -153,6 +256,11 @@
             const rollbackBtn = document.getElementById('rollbackBtn');
             const videoContainer = document.getElementById('videoContainer');
             var videoId = "{{ $videoId }}";
+            
+            // Initialize AdminLTE tooltips if available
+            if (typeof $ !== 'undefined' && $.fn.tooltip) {
+                $('[data-toggle="tooltip"]').tooltip();
+            }
 
             // Play/Pause toggle
             playPauseBtn.addEventListener('click', () => {
@@ -164,13 +272,13 @@
             });
 
             video.addEventListener('play', () => {
-                playIcon.classList.add('hidden');
-                pauseIcon.classList.remove('hidden');
+                playIcon.classList.add('d-none');
+                pauseIcon.classList.remove('d-none');
             });
 
             video.addEventListener('pause', () => {
-                playIcon.classList.remove('hidden');
-                pauseIcon.classList.add('hidden');
+                playIcon.classList.remove('d-none');
+                pauseIcon.classList.add('d-none');
             });
 
             video.addEventListener('ended', () => {
@@ -222,14 +330,17 @@
                             
                             // Show completion message
                             const completedHtml = `
-                                <div id="completedSection" class="mt-8 w-full max-w-4xl mx-auto bg-red-50 border-2 border-red-200 rounded-lg p-6">
-                                    <div class="flex items-center gap-3">
-                                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        <div>
-                                            <h3 class="text-xl font-semibold text-red-800">Review Completed</h3>
-                                            <p class="text-sm text-red-600 mt-1">Thank you for completing the review!</p>
+                                <div class="card card-success" id="completedSection">
+                                    <div class="card-header">
+                                        <h3 class="card-title">
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                            Review Completed
+                                        </h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-success mb-0">
+                                            <i class="icon fas fa-check"></i>
+                                            Thank you for completing the review!
                                         </div>
                                     </div>
                                 </div>
@@ -289,9 +400,9 @@
                 const isFullscreen = !!document.fullscreenElement;
 
                 if (isFullscreen) {
-                    fsEnterIcon.classList.add('hidden');
-                    fsExitIcon.classList.remove('hidden');
-                    rollbackBtn.classList.remove('hidden');
+                    fsEnterIcon.classList.add('d-none');
+                    fsExitIcon.classList.remove('d-none');
+                    rollbackBtn.classList.remove('d-none');
 
                     videoContainer.style.width = '100vw';
                     videoContainer.style.height = '100vh';
@@ -299,9 +410,9 @@
                     video.style.height = '100%';
                     video.style.objectFit = 'contain';
                 } else {
-                    fsEnterIcon.classList.remove('hidden');
-                    fsExitIcon.classList.add('hidden');
-                    rollbackBtn.classList.add('hidden');
+                    fsEnterIcon.classList.remove('d-none');
+                    fsExitIcon.classList.add('d-none');
+                    rollbackBtn.classList.add('d-none');
 
                     // Unlock orientation when exiting
                     if (screen.orientation && screen.orientation.unlock) {
@@ -317,11 +428,11 @@
 
                 // Sync play/pause icons
                 if (video.paused) {
-                    playIcon.classList.remove('hidden');
-                    pauseIcon.classList.add('hidden');
+                    playIcon.classList.remove('d-none');
+                    pauseIcon.classList.add('d-none');
                 } else {
-                    playIcon.classList.add('hidden');
-                    pauseIcon.classList.remove('hidden');
+                    playIcon.classList.add('d-none');
+                    pauseIcon.classList.remove('d-none');
                 }
             });
 
@@ -382,34 +493,46 @@
                             let adminReplyHTML = '';
                             if (comment.admin_reply) {
                                 adminReplyHTML = `
-                            <div class="comment-reply">
-                                <div class="comment-reply-header">
-                                    <div class="comment-reply-author">${comment.admin_name || 'Admin'}</div>
-                                    <div class="comment-reply-date">${comment.admin_replied_at}</div>
+                            <div class="card card-info card-outline mt-3">
+                                <div class="card-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="comment-reply-author font-weight-bold">
+                                            <i class="fas fa-user-shield mr-1"></i>
+                                            ${escapeHtml(comment.admin_name || 'Admin')}
+                                        </div>
+                                        <div class="comment-reply-date text-muted small">${comment.admin_replied_at}</div>
+                                    </div>
                                 </div>
-                                <div class="comment-reply-content">${escapeHtml(comment.admin_reply)}</div>
+                                <div class="card-body">
+                                    <div class="comment-reply-content">${escapeHtml(comment.admin_reply)}</div>
+                                </div>
                             </div>
                         `;
                             }
 
+                            commentElement.className = 'card card-outline mb-3';
                             commentElement.innerHTML = `
-                        <div class="comment-header">
-                            <div class="comment-author">${escapeHtml(comment.student_name)}</div>
-                            <div class="comment-date">${comment.created_at}</div>
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="comment-author font-weight-bold">${escapeHtml(comment.student_name)}</div>
+                                <div class="comment-date text-muted small">${comment.created_at}</div>
+                            </div>
                         </div>
-                        <div class="comment-content">${escapeHtml(comment.content)}</div>
-                        ${adminReplyHTML}
+                        <div class="card-body">
+                            <div class="comment-content">${escapeHtml(comment.content)}</div>
+                            ${adminReplyHTML}
+                        </div>
                     `;
                             commentsList.appendChild(commentElement);
                         });
                     } else {
                         commentsList.innerHTML =
-                            '<div class="empty-comments"><p>No comments yet. Be the first to comment!</p></div>';
+                            '<div class="alert alert-info text-center"><i class="fas fa-info-circle mr-1"></i>No comments yet. Be the first to comment!</div>';
                     }
                 } catch (error) {
                     console.error('Error loading comments:', error);
                     commentsList.innerHTML =
-                        '<div class="comment-error">Failed to load comments. Please try again.</div>';
+                        '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle mr-1"></i>Failed to load comments. Please try again.</div>';
                 }
             }
 
