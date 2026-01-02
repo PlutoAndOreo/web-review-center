@@ -84,7 +84,14 @@
                 {{-- Google Form Link --}}
                 <div>
                     <label class="block text-gray-700 font-semibold mb-1">Google Form Link (for exam after video) <span
-                            class="text-red-500">*</span></label>
+                            class="text-red-500">*</span>
+                        <a href="{{ asset('google-form-instructions.pdf') }}" target="_blank" style="
+                            text-decoration: underline;
+                            color: blue;
+                            font-size: 15px;
+                        ">To Upload Form</a>
+    
+                    </label>
                     <input type="url" name="google_form_link"
                         value="{{ old('google_form_link') }}"
                         placeholder="https://forms.google.com/..."
