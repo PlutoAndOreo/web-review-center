@@ -6,4 +6,4 @@ COPY default.conf /etc/nginx/conf.d/default.conf
 
 COPY ./error-pages /etc/nginx/error-pages
 
-WORKDIR /srv/app/web-review-center/web-review-center
+WORKDIR /srv/app
