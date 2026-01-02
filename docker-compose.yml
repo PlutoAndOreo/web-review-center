@@ -8,7 +8,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./web-review-center:/srv/app 
+      - ./web-review-center:/srv/app/web-review-center
       - ./docker/nginx/certs:/etc/letsencrypt
       - ./docker/nginx/www:/var/www/certbot
     depends_on:
