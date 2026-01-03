@@ -26,6 +26,40 @@
             display: block;
         }
         
+        /* Hide progress bar to prevent seeking/forwarding */
+        #videoPlayer::-webkit-media-controls-timeline,
+        #videoPlayer::-webkit-media-controls-current-time-display,
+        #videoPlayer::-webkit-media-controls-time-remaining-display {
+            display: none !important;
+        }
+        
+        /* Hide progress bar for Firefox */
+        #videoPlayer::-moz-media-controls-timeline {
+            display: none !important;
+        }
+        
+        /* Hide progress bar and time displays */
+        video::-webkit-media-controls-panel {
+            display: flex !important;
+            -webkit-justify-content: flex-end;
+        }
+        
+        /* Additional CSS to hide progress bar */
+        #videoPlayer::--webkit-media-controls-timeline {
+            display: none !important;
+        }
+        
+        /* Prevent seeking by hiding the progress bar */
+        .video-controls-container {
+            position: relative;
+        }
+        
+        /* Hide native video controls progress bar */
+        video::-webkit-media-controls-timeline-container,
+        video::-webkit-media-controls-timeline {
+            display: none !important;
+        }
+        
         @media (max-width: 768px) {
             .video-controls {
                 flex-wrap: wrap;
@@ -75,13 +109,7 @@
                 <div class="col-sm-6">
                     <h1>{{ $video_title }}</h1>
                 </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{{ route('student.dashboard') }}">Home</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('student.videos.list') }}">Videos</a></li>
-                        <li class="breadcrumb-item active">{{ Str::limit($video_title, 30) }}</li>
-                    </ol>
-                </div>
+                
             </div>
         </div>
     </section>
@@ -106,23 +134,11 @@
                         </div>
                         <div class="card-body p-0">
                             <div id="videoContainer" class="w-100">
-                                <video id="videoPlayer" class="w-100" controlsList="nodownload" preload="none"
-                                    oncontextmenu="return false"></video>
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <div class="d-flex justify-content-center align-items-center video-controls">
-                                <button id="playPauseBtn" class="btn btn-danger btn-sm mr-2" aria-label="Play/Pause">
-                                    <i id="playIcon" class="fas fa-play"></i>
-                                    <i id="pauseIcon" class="fas fa-pause d-none"></i>
-                                </button>
-                                <button id="fullscreenBtn" class="btn btn-secondary btn-sm" aria-label="Fullscreen">
-                                    <i id="fsEnterIcon" class="fas fa-expand"></i>
-                                    <i id="fsExitIcon" class="fas fa-compress d-none"></i>
-                                </button>
-                                <button id="rollbackBtn" class="btn btn-warning btn-sm ml-2 d-none" aria-label="Exit Fullscreen">
-                                    <i class="fas fa-compress"></i>
-                                </button>
+                                <video id="videoPlayer" class="w-100" controlsList="nodownload noremoteplayback" preload="metadata"
+                                    oncontextmenu="return false"
+                                    controls
+                                    disablePictureInPicture
+                                    disableRemotePlayback></video>
                             </div>
                         </div>
                     </div>
@@ -244,6 +260,8 @@
         <!-- AdminLTE JS -->
         <script src="{{ asset('vendor/adminlte/dist/js/adminlte.min.js') }}"></script>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <!-- HLS.js for HLS video streaming -->
+        <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
         <script>
             const video = document.getElementById('videoPlayer');
             const playPauseBtn = document.getElementById('playPauseBtn');
@@ -256,472 +274,122 @@
             const videoContainer = document.getElementById('videoContainer');
             var videoId = "{{ $videoId }}";
             
-            // MSE-based chunked streaming
-            let mediaSource = null;
-            let sourceBuffer = null;
-            let fileSize = 0;
-            let isInitialized = false;
-            let isBuffering = false;
-            let bufferedRanges = [];
-            const INITIAL_CHUNK_DURATION = 10; // 10 seconds initial chunk
-            const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks after initial load
-            let currentStart = 0;
-            let videoDuration = 0;
-            let estimatedBitrate = 0; // bytes per second
+            // HLS video streaming - automatic chunking handled by FFmpeg
+            const hlsPlaylistUrl = "{{ route('student.video.hls.playlist', ['id' => $videoId]) }}";
+            let hls = null;
             
             // Initialize AdminLTE tooltips if available
             if (typeof $ !== 'undefined' && $.fn.tooltip) {
                 $('[data-toggle="tooltip"]').tooltip();
             }
-
-            // Initialize video streaming on first play
-            async function initializeVideo() {
-                if (isInitialized) return;
+            
+            // Initialize HLS streaming
+            if (Hls.isSupported()) {
+                // Use HLS.js for browsers that don't support native HLS
+                hls = new Hls({
+                    enableWorker: true,
+                    lowLatencyMode: false,
+                    backBufferLength: 90
+                });
                 
-                try {
-                    // Get file size
-                    const sizeResponse = await fetch(`/student/video-file-size/${videoId}`);
-                    const sizeData = await sizeResponse.json();
-                    fileSize = sizeData.size;
-                    
-                    // Estimate bitrate (rough estimate: assume 1MB per 10 seconds for initial calculation)
-                    // We'll refine this after getting actual video duration
-                    estimatedBitrate = fileSize / 100; // Rough estimate
-                    
-                    // Create MediaSource
-                    mediaSource = new MediaSource();
-                    video.src = URL.createObjectURL(mediaSource);
-                    
-                    mediaSource.addEventListener('sourceopen', async () => {
-                        try {
-                            // Try common codec combinations
-                            const codecs = [
-                                'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
-                                'video/mp4; codecs="avc1.4d401f, mp4a.40.2"',
-                                'video/mp4; codecs="avc1.640028, mp4a.40.2"',
-                                'video/mp4'
-                            ];
-                            
-                            let codecSupported = false;
-                            for (const codec of codecs) {
-                                if (MediaSource.isTypeSupported(codec)) {
-                                    sourceBuffer = mediaSource.addSourceBuffer(codec);
-                                    codecSupported = true;
-                                    break;
-                                }
-                            }
-                            
-                            if (!codecSupported) {
-                                throw new Error('No supported codec found');
-                            }
-                            
-                            isInitialized = true;
-                            
-                            // Load initial 10-second chunk
-                            await loadInitialChunk();
-                            
-                        } catch (error) {
-                            console.error('Error initializing source buffer:', error);
-                            // Fallback to direct streaming
-                            fallbackToDirectStream();
-                        }
-                    });
-                    
-                    mediaSource.addEventListener('error', (e) => {
-                        console.error('MediaSource error:', e);
-                        fallbackToDirectStream();
-                    });
-                    
-                } catch (error) {
-                    console.error('Error initializing video:', error);
-                    fallbackToDirectStream();
-                }
-            }
-            
-            // Check if MediaSource and SourceBuffer are still valid
-            function isMediaSourceValid() {
-                return mediaSource && 
-                       mediaSource.readyState === 'open' && 
-                       sourceBuffer && 
-                       mediaSource.sourceBuffers.length > 0 &&
-                       mediaSource.sourceBuffers[0] === sourceBuffer;
-            }
-            
-            // Load initial 10-second chunk
-            async function loadInitialChunk() {
-                if (isBuffering || !sourceBuffer) return;
+                hls.loadSource(hlsPlaylistUrl);
+                hls.attachMedia(video);
                 
-                if (!isMediaSourceValid()) {
-                    console.warn('MediaSource invalid, cannot load initial chunk');
-                    return;
-                }
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    console.log('HLS manifest parsed, video ready to play');
+                });
                 
-                try {
-                    // Estimate bytes for 10 seconds (rough estimate)
-                    // For MP4, we need to load from the beginning to get proper initialization
-                    // Load first 2MB which should contain ~10 seconds of video
-                    const initialChunkSize = Math.min(2 * 1024 * 1024, fileSize); // 2MB or file size, whichever is smaller
-                    const end = initialChunkSize - 1;
-                    
-                    isBuffering = true;
-                    const response = await fetch(`/student/video-chunk/${videoId}?start=0&end=${end}`);
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    
-                    const chunk = await response.arrayBuffer();
-                    
-                    // Check again before appending
-                    if (!isMediaSourceValid()) {
-                        console.warn('MediaSource became invalid while loading chunk');
-                        isBuffering = false;
-                        return;
-                    }
-                    
-                    // Wait for source buffer to be ready
-                    if (sourceBuffer.updating) {
-                        await new Promise(resolve => {
-                            const checkUpdate = () => {
-                                if (!isMediaSourceValid()) {
-                                    isBuffering = false;
-                                    resolve();
-                                    return;
-                                }
-                                if (!sourceBuffer.updating) {
-                                    resolve();
-                                } else {
-                                    sourceBuffer.addEventListener('updateend', checkUpdate, { once: true });
-                                }
-                            };
-                            checkUpdate();
-                        });
-                    }
-                    
-                    // Final check before append
-                    if (!isMediaSourceValid()) {
-                        console.warn('MediaSource invalid before append');
-                        isBuffering = false;
-                        return;
-                    }
-                    
-                    sourceBuffer.appendBuffer(chunk);
-                    currentStart = end + 1;
-                    
-                    sourceBuffer.addEventListener('updateend', () => {
-                        isBuffering = false;
-                        // Try to get video duration
-                        if (video.readyState >= 2 && video.duration) {
-                            videoDuration = video.duration;
-                            // Refine bitrate estimate
-                            estimatedBitrate = fileSize / videoDuration;
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    console.error('HLS error:', data);
+                    if (data.fatal) {
+                        switch(data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                console.log('Network error, trying to recover...');
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                console.log('Media error, trying to recover...');
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                console.log('Fatal error, cannot recover');
+                                hls.destroy();
+                                break;
                         }
-                        // Continue loading chunks only if still valid
-                        if (isMediaSourceValid()) {
-                            loadNextChunk();
-                        }
-                    }, { once: true });
-                    
-                } catch (error) {
-                    console.error('Error loading initial chunk:', error);
-                    isBuffering = false;
-                    if (error.name === 'InvalidStateError' || error.message.includes('SourceBuffer')) {
-                        // MediaSource was closed, fallback to direct stream
-                        fallbackToDirectStream();
-                    }
-                }
-            }
-            
-            // Load next chunk progressively
-            async function loadNextChunk() {
-                if (isBuffering || !sourceBuffer || currentStart >= fileSize) {
-                    if (currentStart >= fileSize && isMediaSourceValid()) {
-                        try {
-                            mediaSource.endOfStream();
-                        } catch (e) {
-                            console.warn('Error ending stream:', e);
-                        }
-                    }
-                    return;
-                }
-                
-                // Check if MediaSource is still valid
-                if (!isMediaSourceValid()) {
-                    console.warn('MediaSource invalid, cannot load next chunk');
-                    isBuffering = false;
-                    return;
-                }
-                
-                // Don't buffer too far ahead (buffer up to 30 seconds ahead)
-                if (video.readyState >= 2 && videoDuration > 0) {
-                    const currentTime = video.currentTime || 0;
-                    const bufferedEnd = getBufferedEnd();
-                    const secondsAhead = (bufferedEnd - currentTime);
-                    
-                    if (secondsAhead > 30) {
-                        // Already buffered enough, check again later
-                        setTimeout(() => {
-                            if (isMediaSourceValid()) {
-                                loadNextChunk();
-                            }
-                        }, 1000);
-                        return;
-                    }
-                }
-                
-                try {
-                    // Evict old buffers before loading new chunk to prevent quota exceeded
-                    await evictOldBuffers();
-                    
-                    const end = Math.min(currentStart + CHUNK_SIZE - 1, fileSize - 1);
-                    
-                    isBuffering = true;
-                    const response = await fetch(`/student/video-chunk/${videoId}?start=${currentStart}&end=${end}`);
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    
-                    const chunk = await response.arrayBuffer();
-                    
-                    // Check again before appending
-                    if (!isMediaSourceValid()) {
-                        console.warn('MediaSource became invalid while loading chunk');
-                        isBuffering = false;
-                        return;
-                    }
-                    
-                    // Wait for source buffer to be ready
-                    if (sourceBuffer.updating) {
-                        await new Promise(resolve => {
-                            const checkUpdate = () => {
-                                if (!isMediaSourceValid()) {
-                                    isBuffering = false;
-                                    resolve();
-                                    return;
-                                }
-                                if (!sourceBuffer.updating) {
-                                    resolve();
-                                } else {
-                                    sourceBuffer.addEventListener('updateend', checkUpdate, { once: true });
-                                }
-                            };
-                            checkUpdate();
-                        });
-                    }
-                    
-                    // Final check before append
-                    if (!isMediaSourceValid()) {
-                        console.warn('MediaSource invalid before append');
-                        isBuffering = false;
-                        return;
-                    }
-                    
-                    // Try to append, catch QuotaExceededError
-                    try {
-                        sourceBuffer.appendBuffer(chunk);
-                    } catch (appendError) {
-                        if (appendError.name === 'QuotaExceededError') {
-                            console.warn('QuotaExceededError, evicting more buffers and retrying...');
-                            // Evict more aggressively
-                            await evictOldBuffers();
-                            // Try again after eviction
-                            if (isMediaSourceValid() && !sourceBuffer.updating) {
-                                sourceBuffer.appendBuffer(chunk);
-                            } else {
-                                throw appendError;
-                            }
-                        } else {
-                            throw appendError;
-                        }
-                    }
-                    
-                    sourceBuffer.addEventListener('updateend', () => {
-                        isBuffering = false;
-                        currentStart = end + 1;
-                        
-                        // Continue loading if not at end and still valid
-                        if (currentStart < fileSize && isMediaSourceValid()) {
-                            loadNextChunk();
-                        } else if (currentStart >= fileSize && isMediaSourceValid()) {
-                            try {
-                                mediaSource.endOfStream();
-                            } catch (e) {
-                                console.warn('Error ending stream:', e);
-                            }
-                        }
-                    }, { once: true });
-                    
-                } catch (error) {
-                    console.error('Error loading chunk:', error);
-                    isBuffering = false;
-                    
-                    // If it's an InvalidStateError, the SourceBuffer was removed
-                    if (error.name === 'InvalidStateError' || error.message.includes('SourceBuffer')) {
-                        console.warn('SourceBuffer invalid, falling back to direct stream');
-                        fallbackToDirectStream();
-                        return;
-                    }
-                    
-                    // If it's a QuotaExceededError, try evicting and retry
-                    if (error.name === 'QuotaExceededError') {
-                        console.warn('QuotaExceededError, attempting to evict buffers...');
-                        evictOldBuffers().then(() => {
-                            if (isMediaSourceValid() && !isBuffering) {
-                                setTimeout(() => {
-                                    if (isMediaSourceValid() && !isBuffering) {
-                                        loadNextChunk();
-                                    }
-                                }, 500);
-                            }
-                        });
-                        return;
-                    }
-                    
-                    // Retry after a delay only if MediaSource is still valid
-                    if (isMediaSourceValid()) {
-                        setTimeout(() => {
-                            if (isMediaSourceValid() && !isBuffering) {
-                                loadNextChunk();
-                            }
-                        }, 1000);
-                    }
-                }
-            }
-            
-            // Get the end of the buffered range
-            function getBufferedEnd() {
-                if (!sourceBuffer || !isMediaSourceValid() || sourceBuffer.buffered.length === 0) return 0;
-                return sourceBuffer.buffered.end(sourceBuffer.buffered.length - 1);
-            }
-            
-            // Evict old buffered data to free up space
-            async function evictOldBuffers() {
-                if (!isMediaSourceValid() || !sourceBuffer || sourceBuffer.updating) {
-                    return;
-                }
-                
-                try {
-                    const currentTime = video.currentTime || 0;
-                    const buffered = sourceBuffer.buffered;
-                    
-                    if (buffered.length === 0) return;
-                    
-                    // Keep 10 seconds before current time and remove everything before that
-                    const keepStart = Math.max(0, currentTime - 10);
-                    
-                    // Find ranges to remove (everything before keepStart)
-                    for (let i = 0; i < buffered.length; i++) {
-                        const rangeStart = buffered.start(i);
-                        const rangeEnd = buffered.end(i);
-                        
-                        // If this range ends before keepStart, remove it
-                        if (rangeEnd < keepStart) {
-                            if (!sourceBuffer.updating && isMediaSourceValid()) {
-                                sourceBuffer.remove(rangeStart, rangeEnd);
-                                // Wait for removal to complete
-                                await new Promise(resolve => {
-                                    if (!isMediaSourceValid()) {
-                                        resolve();
-                                        return;
-                                    }
-                                    sourceBuffer.addEventListener('updateend', resolve, { once: true });
-                                });
-                            }
-                        } else if (rangeStart < keepStart && rangeEnd > keepStart) {
-                            // Range overlaps with keepStart, remove only the part before keepStart
-                            if (!sourceBuffer.updating && isMediaSourceValid()) {
-                                sourceBuffer.remove(rangeStart, keepStart);
-                                // Wait for removal to complete
-                                await new Promise(resolve => {
-                                    if (!isMediaSourceValid()) {
-                                        resolve();
-                                        return;
-                                    }
-                                    sourceBuffer.addEventListener('updateend', resolve, { once: true });
-                                });
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.warn('Error evicting buffers:', error);
-                }
-            }
-            
-            // Fallback to direct streaming if MSE fails
-            function fallbackToDirectStream() {
-                console.log('Falling back to direct streaming');
-                video.src = `/student/video-chunk/${videoId}`;
-                isInitialized = true;
-            }
-            
-            // Monitor buffering and load chunks as needed
-            video.addEventListener('progress', () => {
-                if (isInitialized && isMediaSourceValid() && !isBuffering) {
-                    const bufferedEnd = getBufferedEnd();
-                    const currentTime = video.currentTime || 0;
-                    
-                    // Periodically evict old buffers to prevent quota exceeded
-                    if (Math.random() < 0.1) { // 10% chance on each progress event
-                        evictOldBuffers();
-                    }
-                    
-                    // If we're getting close to the end of buffered content, load more
-                    if (bufferedEnd - currentTime < 10 && currentStart < fileSize) {
-                        loadNextChunk();
-                    }
-                }
-            });
-            
-            video.addEventListener('timeupdate', () => {
-                if (isInitialized && isMediaSourceValid() && !isBuffering) {
-                    const bufferedEnd = getBufferedEnd();
-                    const currentTime = video.currentTime || 0;
-                    
-                    // Periodically evict old buffers (every 5 seconds of playback)
-                    if (Math.floor(currentTime) % 5 === 0 && Math.floor(currentTime) !== Math.floor(video.currentTime - 0.1)) {
-                        evictOldBuffers();
-                    }
-                    
-                    // Load more chunks if we're getting close to the end
-                    if (bufferedEnd - currentTime < 15 && currentStart < fileSize) {
-                        loadNextChunk();
-                    }
-                }
-            });
-            
-            // Handle MediaSource errors
-            if (mediaSource) {
-                mediaSource.addEventListener('error', (e) => {
-                    console.error('MediaSource error:', e);
-                    if (mediaSource.readyState === 'closed') {
-                        fallbackToDirectStream();
                     }
                 });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // Native HLS support (Safari, iOS)
+                video.src = hlsPlaylistUrl;
+            } else {
+                console.error('HLS is not supported in this browser');
+                alert('Your browser does not support HLS video streaming. Please use a modern browser.');
             }
-
-            // Play/Pause toggle
-            playPauseBtn.addEventListener('click', async () => {
-                if (!isInitialized) {
-                    await initializeVideo();
-                    // Wait a bit for initial chunk to load
-                    setTimeout(() => {
-                        video.play().catch(err => console.error('Play error:', err));
-                    }, 500);
-                } else {
-                    if (video.paused) {
-                        video.play().catch(err => console.error('Play error:', err));
+            
+            // Prevent seeking/forwarding by hiding progress bar and blocking seek attempts
+            video.addEventListener('loadedmetadata', function() {
+                // Hide progress bar elements using CSS
+                const style = document.createElement('style');
+                style.textContent = `
+                    video::-webkit-media-controls-timeline,
+                    video::-webkit-media-controls-current-time-display,
+                    video::-webkit-media-controls-time-remaining-display,
+                    video::-webkit-media-controls-timeline-container {
+                        display: none !important;
+                    }
+                    video::-moz-media-controls-timeline {
+                        display: none !important;
+                    }
+                `;
+                document.head.appendChild(style);
+            });
+            
+            // Prevent seeking by intercepting seek attempts
+            let lastTime = 0;
+            let isUserSeeking = false;
+            
+            video.addEventListener('timeupdate', function() {
+                if (!isUserSeeking) {
+                    const currentTime = video.currentTime;
+                    // If time jumps forward more than 2 seconds (user trying to seek), reset to last valid position
+                    if (currentTime > lastTime + 2) {
+                        video.currentTime = lastTime;
                     } else {
-                        video.pause();
+                        lastTime = currentTime;
                     }
                 }
             });
             
-            // Also initialize on video play event
-            video.addEventListener('play', async () => {
-                if (!isInitialized) {
-                    await initializeVideo();
+            // Prevent seeking via seeking event
+            video.addEventListener('seeking', function(e) {
+                if (video.currentTime > lastTime + 1) {
+                    e.preventDefault();
+                    video.currentTime = lastTime;
                 }
+            });
+            
+            video.addEventListener('seeked', function() {
+                if (video.currentTime > lastTime + 1) {
+                    video.currentTime = lastTime;
+                } else {
+                    lastTime = video.currentTime;
+                }
+                isUserSeeking = false;
+            });
+            
+            // Prevent seeking via keyboard
+            video.addEventListener('keydown', function(e) {
+                // Prevent arrow keys from seeking
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            });
+            
+            // Disable right-click context menu on video
+            video.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                return false;
             });
 
             video.addEventListener('play', () => {

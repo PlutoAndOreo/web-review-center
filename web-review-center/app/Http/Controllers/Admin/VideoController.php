@@ -164,17 +164,51 @@ class VideoController extends Controller
     {
         $video = Video::findOrFail($id);
 
-        // delete stored files if exist
-        if ($video->file_path && Storage::disk('private')->exists($video->file_path)) {
-            Storage::disk('private')->delete($video->file_path);
-        }
-        if ($video->video_thumb) {
-            Storage::disk('public')->delete($video->video_thumb);
-        }
+        try {
+            // Delete HLS files (playlist and all segments)
+            if ($video->file_path && Storage::disk('private')->exists($video->file_path)) {
+                $hlsDir = dirname($video->file_path);
+                
+                // Delete the entire HLS directory with all segments
+                if (Storage::disk('private')->exists($hlsDir)) {
+                    Storage::disk('private')->deleteDirectory($hlsDir);
+                } else {
+                    // Fallback: delete just the playlist file if directory doesn't exist
+                    Storage::disk('private')->delete($video->file_path);
+                }
+            }
+            
+            // Delete thumbnail
+            if ($video->video_thumb && Storage::disk('public')->exists($video->video_thumb)) {
+                Storage::disk('public')->delete($video->video_thumb);
+            }
+            
+            // Delete the original uploaded file if it exists in uploads directory
+            // The storedPath from processVideoToHLS is in 'uploads/' directory
+            // We'll try to find and delete any related upload files
+            $today = date('Y-m-d');
+            $possibleUploadPaths = [
+                "uploads/tmp/{$video->id}",
+                "uploads/{$video->id}",
+            ];
+            
+            foreach ($possibleUploadPaths as $uploadPath) {
+                if (Storage::disk('private')->exists($uploadPath)) {
+                    if (Storage::disk('private')->exists($uploadPath) && is_dir(Storage::disk('private')->path($uploadPath))) {
+                        Storage::disk('private')->deleteDirectory($uploadPath);
+                    } else {
+                        Storage::disk('private')->delete($uploadPath);
+                    }
+                }
+            }
 
-        $video->delete();
+            $video->delete();
 
-        return redirect()->route('admin.videos.list')->with('success', 'Video deleted successfully');
+            return redirect()->route('admin.videos.list')->with('success', 'Video deleted successfully');
+        } catch (\Exception $e) {
+            Log::error("Error deleting video {$id}: " . $e->getMessage());
+            return redirect()->route('admin.videos.list')->with('error', 'Error deleting video: ' . $e->getMessage());
+        }
     }
 
     /**

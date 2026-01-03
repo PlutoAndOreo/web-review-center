@@ -37,74 +37,67 @@ class StudentVideoController extends Controller
             'video_title' => $video->title,
         ]);
     }
-    public function stream(Request $request, $id)
+    /**
+     * Serve HLS playlist file (.m3u8)
+     */
+    public function hlsPlaylist($id)
     {
         $video = Video::findOrFail($id);
 
-        if (Storage::disk('private')->exists($video->file_path)){
-            $path = Storage::disk('private')->path($video->file_path);
-        } else {
-            return response()->json(['error' => 'File not found'], 404);
+        if (!$video->file_path || !Storage::disk('private')->exists($video->file_path)) {
+            return response()->json(['error' => 'HLS playlist not found'], 404);
         }
 
-        $size = filesize($path);
-        $rangeHeader = $request->header('Range');
-
-        if ($rangeHeader) {
-            if (!preg_match('/bytes=(\d*)-(\d*)/', $rangeHeader, $matches)) {
-                return response('', 416, ['Content-Range' => "bytes */{$size}"]);
-            }
-
-            $start = $matches[1] === '' ? 0 : intval($matches[1]);
-            $end = $matches[2] === '' ? ($size - 1) : intval($matches[2]);
-            if ($end >= $size) {
-                $end = $size - 1;
-            }
-            if ($start > $end || $start >= $size) {
-                return response('', 416, ['Content-Range' => "bytes */{$size}"]);
-            }
-
-            $length = $end - $start + 1;
-            $headers = [
-                'Content-Type' => 'video/mp4',
-                'Accept-Ranges' => 'bytes',
-                'Content-Range' => "bytes {$start}-{$end}/{$size}",
-                'Content-Length' => $length,
-                'Cache-Control' => 'no-cache'
-            ];
-
-            $stream = function () use ($path, $start, $length) {
-                $handle = fopen($path, 'rb');
-                fseek($handle, $start);
-                $bufferSize = 1024 * 1024;
-                $bytesLeft = $length;
-                while ($bytesLeft > 0 && !feof($handle)) {
-                    $readLength = ($bytesLeft > $bufferSize) ? $bufferSize : $bytesLeft;
-                    echo fread($handle, $readLength);
-                    flush();
-                    $bytesLeft -= $readLength;
-                }
-                fclose($handle);
-            };
-
-            return response()->stream($stream, 206, $headers);
-        } else {
-            $headers = [
-                'Content-Type' => 'video/mp4',
-                'Content-Length' => $size,
-                'Accept-Ranges' => 'bytes',
-                'Cache-Control' => 'no-cache'
-            ];
-            $stream = function () use ($path) {
-                $handle = fopen($path, 'rb');
-                while (!feof($handle)) {
-                    echo fread($handle, 1024 * 1024);
-                    flush();
-                }
-                fclose($handle);
-            };
-            return response()->stream($stream, 200, $headers);
+        $playlistPath = Storage::disk('private')->path($video->file_path);
+        
+        if (!file_exists($playlistPath)) {
+            return response()->json(['error' => 'HLS playlist file not found'], 404);
         }
+
+        $content = file_get_contents($playlistPath);
+        
+        // Update segment paths to use the correct route
+        // HLS segments are typically named segment_000.ts, segment_001.ts, etc.
+        $content = preg_replace_callback(
+            '/(segment_\d+\.ts)/',
+            function ($matches) use ($id) {
+                return route('student.video.hls.segment', ['id' => $id, 'segment' => $matches[1]]);
+            },
+            $content
+        );
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.apple.mpegurl',
+            'Cache-Control' => 'no-cache',
+            'Access-Control-Allow-Origin' => '*',
+        ]);
+    }
+
+    /**
+     * Serve HLS segment files (.ts)
+     */
+    public function hlsSegment($id, $segment)
+    {
+        $video = Video::findOrFail($id);
+
+        if (!$video->file_path) {
+            return response()->json(['error' => 'Video not found'], 404);
+        }
+
+        $hlsDir = dirname($video->file_path);
+        $segmentPath = $hlsDir . '/' . basename($segment);
+        
+        if (!Storage::disk('private')->exists($segmentPath)) {
+            return response()->json(['error' => 'Segment not found'], 404);
+        }
+
+        $segmentFullPath = Storage::disk('private')->path($segmentPath);
+        
+        return response()->file($segmentFullPath, [
+            'Content-Type' => 'video/mp2t',
+            'Cache-Control' => 'public, max-age=3600',
+            'Access-Control-Allow-Origin' => '*',
+        ]);
     }
 
     public function getVideoFileSize($id) {

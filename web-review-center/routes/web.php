@@ -110,8 +110,8 @@ Route::get('admin/videos/progress/{token}', [VideoController::class, 'progress']
         // Videos
         Route::get('/videos/list', [StudentVideoController::class, 'list'])->name('videos.list');
         Route::get('/videos/{id}', [StudentVideoController::class, 'index'])->whereNumber('id')->name('videos');
-        Route::get('/video-file-size/{id}', [StudentVideoController::class, 'getVideoFileSize'])->name('video.size');
-        Route::get('/video-chunk/{id}', [StudentVideoController::class, 'stream'])->name('video.chunk');
+        Route::get('/video-hls/{id}/playlist.m3u8', [StudentVideoController::class, 'hlsPlaylist'])->name('video.hls.playlist');
+        Route::get('/video-hls/{id}/segment/{segment}', [StudentVideoController::class, 'hlsSegment'])->where('segment', '.*')->name('video.hls.segment');
         Route::get('/video-stream/{id}', [StudentVideoController::class, 'stream'])->name('video.stream');
         Route::get('/videos/{id}/completion-status', [StudentVideoController::class, 'checkCompletionStatus'])->name('videos.completion-status');
         // Logout
