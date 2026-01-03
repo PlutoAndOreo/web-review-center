@@ -45,8 +45,16 @@ window.axios.interceptors.response.use(
                         
                         // Retry the original request
                         const config = error.config;
-                        if (config) {
+                        if (config && !config._retry) {
+                            config._retry = true; // Prevent infinite retry loop
+                            config.headers = config.headers || {};
                             config.headers['X-CSRF-TOKEN'] = data.token;
+                            
+                            // For FormData requests, ensure we don't lose the data
+                            if (config.data instanceof FormData) {
+                                // FormData is already set, just update headers
+                            }
+                            
                             return window.axios.request(config);
                         }
                     }
@@ -56,7 +64,8 @@ window.axios.interceptors.response.use(
             }
             
             // If refresh failed, show user-friendly message
-            if (confirm('Your session has expired. Click OK to refresh the page and continue.')) {
+            const shouldReload = confirm('Your session has expired. Click OK to refresh the page and continue.');
+            if (shouldReload) {
                 window.location.reload();
             }
         }

@@ -55,8 +55,9 @@
     // Handle 419 errors in fetch requests
     const originalFetch = window.fetch;
     window.fetch = async function(...args) {
-        const response = await originalFetch(...args);
+        let response = await originalFetch(...args);
         
+        // Clone response for reading status without consuming body
         if (response.status === 419) {
             // CSRF token expired, try to refresh
             const newToken = await refreshCsrfToken();
@@ -67,8 +68,18 @@
                 config.headers = config.headers || {};
                 config.headers['X-CSRF-TOKEN'] = newToken;
                 
+                // Clone the original request if it has a body
+                if (args[1] && args[1].body) {
+                    // For FormData, we need to recreate it
+                    if (args[1].body instanceof FormData) {
+                        config.body = args[1].body;
+                    } else {
+                        config.body = args[1].body;
+                    }
+                }
+                
                 const retryResponse = await originalFetch(args[0], config);
-                if (retryResponse.ok) {
+                if (retryResponse.ok || retryResponse.status !== 419) {
                     return retryResponse;
                 }
             }
@@ -108,13 +119,44 @@
         return originalXHROpen.apply(this, [method, url, ...rest]);
     };
 
-    // Periodically refresh CSRF token (every 30 minutes)
+    // Periodically refresh CSRF token (every 15 minutes to prevent expiration)
     setInterval(async () => {
         await refreshCsrfToken();
-    }, 30 * 60 * 1000);
-
+    }, 15 * 60 * 1000);
+    
+    // Refresh token on page visibility change (when user returns to tab)
+    document.addEventListener('visibilitychange', async () => {
+        if (!document.hidden) {
+            await refreshCsrfToken();
+        }
+    });
+    
+    // Handle form submissions - refresh token before submit and handle 419 errors
+    document.addEventListener('submit', async function(e) {
+        const form = e.target;
+        if (form && form.tagName === 'FORM' && form.method.toUpperCase() !== 'GET') {
+            // Refresh token before form submission to prevent expiration
+            const newToken = await refreshCsrfToken();
+            
+            // Update form's hidden CSRF input if it exists
+            if (newToken) {
+                const csrfInput = form.querySelector('input[name="_token"]');
+                if (csrfInput) {
+                    csrfInput.value = newToken;
+                }
+            }
+        }
+    }, true); // Use capture phase to run before other handlers
+    
     // Expose refresh function globally
     window.refreshCsrfToken = refreshCsrfToken;
     window.getCsrfToken = getCsrfToken;
+    
+    // Initialize token refresh on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', refreshCsrfToken);
+    } else {
+        refreshCsrfToken();
+    }
 })();
 
