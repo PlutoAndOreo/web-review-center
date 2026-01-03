@@ -263,6 +263,7 @@
         <!-- HLS.js for HLS video streaming -->
         <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
         <script>
+            // Add null checks for all DOM elements
             const video = document.getElementById('videoPlayer');
             const playPauseBtn = document.getElementById('playPauseBtn');
             const playIcon = document.getElementById('playIcon');
@@ -274,9 +275,18 @@
             const videoContainer = document.getElementById('videoContainer');
             var videoId = "{{ $videoId }}";
             
+            // Check if video element exists
+            if (!video) {
+                console.error('Video player element not found');
+            }
+            
             // HLS video streaming - automatic chunking handled by FFmpeg
-            const hlsPlaylistUrl = "{{ route('student.video.hls.playlist', ['id' => $videoId]) }}";
+            // Route is inside student prefix group, so use the route name without 'student.' prefix
+            // Laravel will automatically prefix it
+            const hlsPlaylistUrl = "{{ url('/student/video-hls/' . $videoId . '/playlist.m3u8') }}";
             let hls = null;
+            
+            console.log('HLS Playlist URL:', hlsPlaylistUrl);
             
             // Initialize AdminLTE tooltips if available
             if (typeof $ !== 'undefined' && $.fn.tooltip) {
@@ -284,7 +294,7 @@
             }
             
             // Initialize HLS streaming
-            if (Hls.isSupported()) {
+            if (video && typeof Hls !== 'undefined' && Hls.isSupported()) {
                 // Use HLS.js for browsers that don't support native HLS
                 hls = new Hls({
                     enableWorker: true,
@@ -327,7 +337,8 @@
             }
             
             // Prevent seeking/forwarding by hiding progress bar and blocking seek attempts
-            video.addEventListener('loadedmetadata', function() {
+            if (video) {
+                video.addEventListener('loadedmetadata', function() {
                 // Hide progress bar elements using CSS
                 const style = document.createElement('style');
                 style.textContent = `
@@ -393,13 +404,13 @@
             });
 
             video.addEventListener('play', () => {
-                playIcon.classList.add('d-none');
-                pauseIcon.classList.remove('d-none');
+                if (playIcon) playIcon.classList.add('d-none');
+                if (pauseIcon) pauseIcon.classList.remove('d-none');
             });
 
             video.addEventListener('pause', () => {
-                playIcon.classList.remove('d-none');
-                pauseIcon.classList.add('d-none');
+                if (playIcon) playIcon.classList.remove('d-none');
+                if (pauseIcon) pauseIcon.classList.add('d-none');
             });
 
             video.addEventListener('ended', () => {
@@ -495,45 +506,51 @@
             });
 
             // Fullscreen toggle
-            fullscreenBtn.addEventListener('click', () => {
-                if (!document.fullscreenElement) {
-                    if (videoContainer.requestFullscreen) {
-                        videoContainer.requestFullscreen();
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener('click', () => {
+                    if (!document.fullscreenElement) {
+                        if (videoContainer && videoContainer.requestFullscreen) {
+                            videoContainer.requestFullscreen();
+                        }
+                    } else {
+                        if (document.exitFullscreen) {
+                            document.exitFullscreen();
+                        }
                     }
-                } else {
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen();
-                    }
-                }
-            });
+                });
+            }
 
             // Rollback/Exit Fullscreen button
-            rollbackBtn.addEventListener('click', () => {
-                if (document.fullscreenElement && document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
-            });
+            if (rollbackBtn) {
+                rollbackBtn.addEventListener('click', () => {
+                    if (document.fullscreenElement && document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                });
+            }
 
             // Listen for fullscreen change to update icons and rollback button
             document.addEventListener('fullscreenchange', () => {
-
-
                 const isFullscreen = !!document.fullscreenElement;
 
                 if (isFullscreen) {
-                    fsEnterIcon.classList.add('d-none');
-                    fsExitIcon.classList.remove('d-none');
-                    rollbackBtn.classList.remove('d-none');
+                    if (fsEnterIcon) fsEnterIcon.classList.add('d-none');
+                    if (fsExitIcon) fsExitIcon.classList.remove('d-none');
+                    if (rollbackBtn) rollbackBtn.classList.remove('d-none');
 
-                    videoContainer.style.width = '100vw';
-                    videoContainer.style.height = '100vh';
-                    videoContainer.style.borderRadius = '0';
-                    video.style.height = '100%';
-                    video.style.objectFit = 'contain';
+                    if (videoContainer) {
+                        videoContainer.style.width = '100vw';
+                        videoContainer.style.height = '100vh';
+                        videoContainer.style.borderRadius = '0';
+                    }
+                    if (video) {
+                        video.style.height = '100%';
+                        video.style.objectFit = 'contain';
+                    }
                 } else {
-                    fsEnterIcon.classList.remove('d-none');
-                    fsExitIcon.classList.add('d-none');
-                    rollbackBtn.classList.add('d-none');
+                    if (fsEnterIcon) fsEnterIcon.classList.remove('d-none');
+                    if (fsExitIcon) fsExitIcon.classList.add('d-none');
+                    if (rollbackBtn) rollbackBtn.classList.add('d-none');
 
                     // Unlock orientation when exiting
                     if (screen.orientation && screen.orientation.unlock) {
@@ -541,19 +558,23 @@
                     }
 
                     // Restore layout
-                    videoContainer.style.width = '';
-                    videoContainer.style.height = '';
-                    videoContainer.style.borderRadius = '';
-                    video.style.height = '';
+                    if (videoContainer) {
+                        videoContainer.style.width = '';
+                        videoContainer.style.height = '';
+                        videoContainer.style.borderRadius = '';
+                    }
+                    if (video) {
+                        video.style.height = '';
+                    }
                 }
 
                 // Sync play/pause icons
-                if (video.paused) {
-                    playIcon.classList.remove('d-none');
-                    pauseIcon.classList.add('d-none');
-                } else {
-                    playIcon.classList.add('d-none');
-                    pauseIcon.classList.remove('d-none');
+                if (video && video.paused) {
+                    if (playIcon) playIcon.classList.remove('d-none');
+                    if (pauseIcon) pauseIcon.classList.add('d-none');
+                } else if (video) {
+                    if (playIcon) playIcon.classList.add('d-none');
+                    if (pauseIcon) pauseIcon.classList.remove('d-none');
                 }
             });
 
@@ -563,10 +584,13 @@
             const commentsList = document.getElementById('commentsList');
 
             // Load comments on page load
-            loadComments();
+            if (typeof loadComments === 'function') {
+                loadComments();
+            }
 
             // Handle comment form submission
-            commentForm.addEventListener('submit', async (e) => {
+            if (commentForm) {
+                commentForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
                 const content = commentContent.value.trim();
@@ -598,6 +622,7 @@
                     alert('Failed to post comment. Please try again.');
                 }
             });
+            } // End of commentForm null check
 
             // Load comments function
             async function loadComments() {

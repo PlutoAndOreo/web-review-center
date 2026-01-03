@@ -61,7 +61,8 @@ class StudentVideoController extends Controller
         $content = preg_replace_callback(
             '/(segment_\d+\.ts)/',
             function ($matches) use ($id) {
-                return route('student.video.hls.segment', ['id' => $id, 'segment' => $matches[1]]);
+                // Route name is 'video.hls.segment' but inside student prefix, so it becomes 'student.video.hls.segment'
+                return route('video.hls.segment', ['id' => $id, 'segment' => $matches[1]]);
             },
             $content
         );
