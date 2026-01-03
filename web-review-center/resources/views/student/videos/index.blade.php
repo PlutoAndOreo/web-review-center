@@ -106,9 +106,8 @@
                         </div>
                         <div class="card-body p-0">
                             <div id="videoContainer" class="w-100">
-                                <video id="videoPlayer" class="w-100" controlsList="nodownload" preload="metadata"
-                                    oncontextmenu="return false"
-                                    src="{{ route('student.video.stream', ['id' => $videoId]) }}"></video>
+                                <video id="videoPlayer" class="w-100" controlsList="nodownload" preload="none"
+                                    oncontextmenu="return false"></video>
                             </div>
                         </div>
                         <div class="card-footer">
@@ -257,17 +256,259 @@
             const videoContainer = document.getElementById('videoContainer');
             var videoId = "{{ $videoId }}";
             
+            // MSE-based chunked streaming
+            let mediaSource = null;
+            let sourceBuffer = null;
+            let fileSize = 0;
+            let isInitialized = false;
+            let isBuffering = false;
+            let bufferedRanges = [];
+            const INITIAL_CHUNK_DURATION = 10; // 10 seconds initial chunk
+            const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks after initial load
+            let currentStart = 0;
+            let videoDuration = 0;
+            let estimatedBitrate = 0; // bytes per second
+            
             // Initialize AdminLTE tooltips if available
             if (typeof $ !== 'undefined' && $.fn.tooltip) {
                 $('[data-toggle="tooltip"]').tooltip();
             }
 
+            // Initialize video streaming on first play
+            async function initializeVideo() {
+                if (isInitialized) return;
+                
+                try {
+                    // Get file size
+                    const sizeResponse = await fetch(`/student/video-file-size/${videoId}`);
+                    const sizeData = await sizeResponse.json();
+                    fileSize = sizeData.size;
+                    
+                    // Estimate bitrate (rough estimate: assume 1MB per 10 seconds for initial calculation)
+                    // We'll refine this after getting actual video duration
+                    estimatedBitrate = fileSize / 100; // Rough estimate
+                    
+                    // Create MediaSource
+                    mediaSource = new MediaSource();
+                    video.src = URL.createObjectURL(mediaSource);
+                    
+                    mediaSource.addEventListener('sourceopen', async () => {
+                        try {
+                            // Try common codec combinations
+                            const codecs = [
+                                'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
+                                'video/mp4; codecs="avc1.4d401f, mp4a.40.2"',
+                                'video/mp4; codecs="avc1.640028, mp4a.40.2"',
+                                'video/mp4'
+                            ];
+                            
+                            let codecSupported = false;
+                            for (const codec of codecs) {
+                                if (MediaSource.isTypeSupported(codec)) {
+                                    sourceBuffer = mediaSource.addSourceBuffer(codec);
+                                    codecSupported = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (!codecSupported) {
+                                throw new Error('No supported codec found');
+                            }
+                            
+                            isInitialized = true;
+                            
+                            // Load initial 10-second chunk
+                            await loadInitialChunk();
+                            
+                        } catch (error) {
+                            console.error('Error initializing source buffer:', error);
+                            // Fallback to direct streaming
+                            fallbackToDirectStream();
+                        }
+                    });
+                    
+                    mediaSource.addEventListener('error', (e) => {
+                        console.error('MediaSource error:', e);
+                        fallbackToDirectStream();
+                    });
+                    
+                } catch (error) {
+                    console.error('Error initializing video:', error);
+                    fallbackToDirectStream();
+                }
+            }
+            
+            // Load initial 10-second chunk
+            async function loadInitialChunk() {
+                if (isBuffering || !sourceBuffer) return;
+                
+                try {
+                    // Estimate bytes for 10 seconds (rough estimate)
+                    // For MP4, we need to load from the beginning to get proper initialization
+                    // Load first 2MB which should contain ~10 seconds of video
+                    const initialChunkSize = Math.min(2 * 1024 * 1024, fileSize); // 2MB or file size, whichever is smaller
+                    const end = initialChunkSize - 1;
+                    
+                    isBuffering = true;
+                    const response = await fetch(`/student/video-chunk/${videoId}?start=0&end=${end}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const chunk = await response.arrayBuffer();
+                    
+                    // Wait for source buffer to be ready
+                    if (sourceBuffer.updating) {
+                        await new Promise(resolve => {
+                            sourceBuffer.addEventListener('updateend', resolve, { once: true });
+                        });
+                    }
+                    
+                    sourceBuffer.appendBuffer(chunk);
+                    currentStart = end + 1;
+                    
+                    sourceBuffer.addEventListener('updateend', () => {
+                        isBuffering = false;
+                        // Try to get video duration
+                        if (video.readyState >= 2 && video.duration) {
+                            videoDuration = video.duration;
+                            // Refine bitrate estimate
+                            estimatedBitrate = fileSize / videoDuration;
+                        }
+                        // Continue loading chunks
+                        loadNextChunk();
+                    }, { once: true });
+                    
+                } catch (error) {
+                    console.error('Error loading initial chunk:', error);
+                    isBuffering = false;
+                    fallbackToDirectStream();
+                }
+            }
+            
+            // Load next chunk progressively
+            async function loadNextChunk() {
+                if (isBuffering || !sourceBuffer || currentStart >= fileSize) {
+                    if (currentStart >= fileSize && mediaSource && mediaSource.readyState === 'open') {
+                        mediaSource.endOfStream();
+                    }
+                    return;
+                }
+                
+                // Don't buffer too far ahead (buffer up to 30 seconds ahead)
+                if (video.readyState >= 2 && videoDuration > 0) {
+                    const currentTime = video.currentTime || 0;
+                    const bufferedEnd = getBufferedEnd();
+                    const secondsAhead = (bufferedEnd - currentTime);
+                    
+                    if (secondsAhead > 30) {
+                        // Already buffered enough, check again later
+                        setTimeout(loadNextChunk, 1000);
+                        return;
+                    }
+                }
+                
+                try {
+                    const end = Math.min(currentStart + CHUNK_SIZE - 1, fileSize - 1);
+                    
+                    isBuffering = true;
+                    const response = await fetch(`/student/video-chunk/${videoId}?start=${currentStart}&end=${end}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const chunk = await response.arrayBuffer();
+                    
+                    // Wait for source buffer to be ready
+                    if (sourceBuffer.updating) {
+                        await new Promise(resolve => {
+                            sourceBuffer.addEventListener('updateend', resolve, { once: true });
+                        });
+                    }
+                    
+                    sourceBuffer.appendBuffer(chunk);
+                    
+                    sourceBuffer.addEventListener('updateend', () => {
+                        isBuffering = false;
+                        currentStart = end + 1;
+                        
+                        // Continue loading if not at end
+                        if (currentStart < fileSize) {
+                            loadNextChunk();
+                        } else if (mediaSource && mediaSource.readyState === 'open') {
+                            mediaSource.endOfStream();
+                        }
+                    }, { once: true });
+                    
+                } catch (error) {
+                    console.error('Error loading chunk:', error);
+                    isBuffering = false;
+                    // Retry after a delay
+                    setTimeout(loadNextChunk, 1000);
+                }
+            }
+            
+            // Get the end of the buffered range
+            function getBufferedEnd() {
+                if (!sourceBuffer || sourceBuffer.buffered.length === 0) return 0;
+                return sourceBuffer.buffered.end(sourceBuffer.buffered.length - 1);
+            }
+            
+            // Fallback to direct streaming if MSE fails
+            function fallbackToDirectStream() {
+                console.log('Falling back to direct streaming');
+                video.src = `/student/video-chunk/${videoId}`;
+                isInitialized = true;
+            }
+            
+            // Monitor buffering and load chunks as needed
+            video.addEventListener('progress', () => {
+                if (isInitialized && sourceBuffer && !isBuffering) {
+                    const bufferedEnd = getBufferedEnd();
+                    const currentTime = video.currentTime || 0;
+                    
+                    // If we're getting close to the end of buffered content, load more
+                    if (bufferedEnd - currentTime < 10 && currentStart < fileSize) {
+                        loadNextChunk();
+                    }
+                }
+            });
+            
+            video.addEventListener('timeupdate', () => {
+                if (isInitialized && sourceBuffer && !isBuffering) {
+                    const bufferedEnd = getBufferedEnd();
+                    const currentTime = video.currentTime || 0;
+                    
+                    // Load more chunks if we're getting close to the end
+                    if (bufferedEnd - currentTime < 15 && currentStart < fileSize) {
+                        loadNextChunk();
+                    }
+                }
+            });
+
             // Play/Pause toggle
-            playPauseBtn.addEventListener('click', () => {
-                if (video.paused) {
-                    video.play();
+            playPauseBtn.addEventListener('click', async () => {
+                if (!isInitialized) {
+                    await initializeVideo();
+                    // Wait a bit for initial chunk to load
+                    setTimeout(() => {
+                        video.play().catch(err => console.error('Play error:', err));
+                    }, 500);
                 } else {
-                    video.pause();
+                    if (video.paused) {
+                        video.play().catch(err => console.error('Play error:', err));
+                    } else {
+                        video.pause();
+                    }
+                }
+            });
+            
+            // Also initialize on video play event
+            video.addEventListener('play', async () => {
+                if (!isInitialized) {
+                    await initializeVideo();
                 }
             });
 
