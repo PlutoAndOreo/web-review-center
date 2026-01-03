@@ -35,9 +35,9 @@ class DashboardController extends Controller
             )
             ->orderBy('rc_videos.created_at', 'desc')
             ->get();
-        $totalWatched = $histories->where('watched', 1)->count();
-        $totalCompletedForms = $histories->where('form_complete', 1)->count();
 
+        $totalWatched = $histories->where('watched', 1)->count();
+        $totalCompletedForms = $histories->where('form_completed', 1)->count();
         
         if ($selectedSubject && $selectedSubject !== 'all') {
             $query->where('subject_id', $selectedSubject);
