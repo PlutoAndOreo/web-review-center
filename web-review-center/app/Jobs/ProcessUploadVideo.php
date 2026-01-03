@@ -78,51 +78,54 @@ class ProcessUploadVideo implements ShouldQueue
         
     }
 
+    /**
+     * Convert video to HLS format using FFmpeg
+     * 
+     * HLS (HTTP Live Streaming) Standard:
+     * - Splits video into small segments (10 seconds each)
+     * - Creates playlist.m3u8 file listing all segments
+     * - Segments are loaded on-demand (chunked streaming)
+     * - Supports adaptive bitrate streaming
+     * 
+     * @param string $absoluteFilePath Original video file path
+     * @param int $videoId Video ID
+     * @return array [playlist_path, stored_path]
+     */
     private function processVideoToHLS(string $absoluteFilePath, int $videoId): array
     {
+        // Store original video
         $newFileName = uniqid() . '.mp4';
         $storedPath = 'uploads/' . $newFileName;
-
-        Storage::disk('private')->put(
-            $storedPath,
-            file_get_contents($absoluteFilePath)
-        );
+        Storage::disk('private')->put($storedPath, file_get_contents($absoluteFilePath));
         
-        // Set file permissions for www-data
         $storedFilePath = Storage::disk('private')->path($storedPath);
         $this->setFilePermissions($storedFilePath);
 
+        // HLS output directory structure: videos/YYYY-MM-DD/hls_{videoId}/
         $today = date('Y-m-d');
         $hlsOutputDir = "videos/{$today}/hls_{$videoId}";
         $hlsPlaylistPath = "{$hlsOutputDir}/playlist.m3u8";
         
-        // Create HLS output directory
         Storage::disk('private')->makeDirectory($hlsOutputDir);
         $hlsOutputPath = Storage::disk('private')->path($hlsOutputDir);
         $this->setFilePermissions($hlsOutputPath, true);
 
         Log::info("Converting video to HLS format for ID: {$videoId}");
 
-        // Check if watermark exists in public/image/logo.png (web-accessible public directory)
+        // Check for watermark
         $watermarkPath = public_path('image/logo.png');
         $hasWatermark = file_exists($watermarkPath);
         
-        if ($hasWatermark) {
-            Log::info("Watermark found at {$watermarkPath}, will be added during HLS conversion for video ID: {$videoId}");
-        } else {
-            Log::warning("Watermark not found at {$watermarkPath} for video ID: {$videoId}");
-        }
-        
-        // Convert video to HLS format with watermark (if exists) in a single FFmpeg command
         $inputPath = Storage::disk('private')->path($storedPath);
         $playlistFullPath = Storage::disk('private')->path($hlsPlaylistPath);
         
-        // Build FFmpeg command for HLS conversion with optional watermark
+        // Build FFmpeg HLS conversion command
+        // Key parameters:
+        // -hls_time 10: 10-second segments
+        // -hls_list_size 0: Keep all segments (VOD mode)
+        // -hls_segment_filename: Segment naming pattern (segment_000.ts, segment_001.ts, etc.)
         if ($hasWatermark) {
-            // With watermark: use filter_complex to overlay watermark and preserve audio (if exists)
-            // Scale watermark to appropriate size (100px width, maintain aspect ratio), position bottom-right with 10px margin
-            // The filter output will be automatically used, we just need to map audio explicitly
-            // Using -shortest to ensure output matches input duration
+            // With watermark: overlay logo on video
             $ffmpegCommand = sprintf(
                 'ffmpeg -i %s -i %s -filter_complex "[1:v]scale=100:-1[wm];[0:v][wm]overlay=W-w-10:H-h-10" -map 0:a? -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 128k -hls_time 10 -hls_list_size 0 -hls_segment_filename %s/segment_%%03d.ts -start_number 0 -f hls -y %s',
                 escapeshellarg($inputPath),
@@ -132,7 +135,6 @@ class ProcessUploadVideo implements ShouldQueue
             );
         } else {
             // Without watermark: standard HLS conversion
-            // Use -map 0:v? and -map 0:a? to make both video and audio mapping optional
             $ffmpegCommand = sprintf(
                 'ffmpeg -i %s -map 0:v? -map 0:a? -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 128k -hls_time 10 -hls_list_size 0 -hls_segment_filename %s/segment_%%03d.ts -start_number 0 -f hls -y %s',
                 escapeshellarg($inputPath),

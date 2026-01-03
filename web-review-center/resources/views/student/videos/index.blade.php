@@ -280,22 +280,42 @@
                 console.error('Video player element not found');
             }
             
-            // HLS video streaming - automatic chunking handled by FFmpeg
-            // Route is inside student prefix group, so use the route name without 'student.' prefix
-            // Laravel will automatically prefix it
+            /**
+             * Simple HLS Video Streaming Implementation
+             * 
+             * How it works:
+             * 1. FFmpeg converts video to HLS format (10-second segments)
+             * 2. Server serves playlist.m3u8 file
+             * 3. Player requests segments on-demand (chunked loading)
+             * 4. HLS.js handles playback for non-native browsers
+             */
+            
             const hlsPlaylistUrl = "{{ url('/student/video-hls/' . $videoId . '/playlist.m3u8') }}";
             let hls = null;
             
-            console.log('HLS Playlist URL:', hlsPlaylistUrl);
-            
-            // Initialize AdminLTE tooltips if available
-            if (typeof $ !== 'undefined' && $.fn.tooltip) {
-                $('[data-toggle="tooltip"]').tooltip();
-            }
+            // Prevent AdminLTE from initializing IFrame widget on Google Form iframe
+            // Run immediately to prevent AdminLTE auto-initialization
+            (function() {
+                // Remove data-widget attribute from Google Form iframe immediately
+                const googleFormIframe = document.getElementById('googleFormIframe');
+                if (googleFormIframe) {
+                    googleFormIframe.removeAttribute('data-widget');
+                }
+                
+                // Also prevent AdminLTE from auto-initializing on this iframe
+                if (typeof $ !== 'undefined' && $.fn.IFrame) {
+                    $(document).ready(function() {
+                        if (googleFormIframe) {
+                            $(googleFormIframe).removeAttr('data-widget');
+                            $(googleFormIframe).removeData('IFrame');
+                        }
+                    });
+                }
+            })();
             
             // Initialize HLS streaming
             if (video && typeof Hls !== 'undefined' && Hls.isSupported()) {
-                // Use HLS.js for browsers that don't support native HLS
+                // HLS.js for Chrome, Firefox, Edge (browsers without native HLS)
                 hls = new Hls({
                     enableWorker: true,
                     lowLatencyMode: false,
@@ -306,132 +326,140 @@
                 hls.attachMedia(video);
                 
                 hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    console.log('HLS manifest parsed, video ready to play');
+                    console.log('HLS video ready to play');
                 });
                 
                 hls.on(Hls.Events.ERROR, function(event, data) {
-                    console.error('HLS error:', data);
                     if (data.fatal) {
                         switch(data.type) {
                             case Hls.ErrorTypes.NETWORK_ERROR:
-                                console.log('Network error, trying to recover...');
+                                console.log('Network error, retrying...');
                                 hls.startLoad();
                                 break;
                             case Hls.ErrorTypes.MEDIA_ERROR:
-                                console.log('Media error, trying to recover...');
+                                console.log('Media error, recovering...');
                                 hls.recoverMediaError();
                                 break;
                             default:
-                                console.log('Fatal error, cannot recover');
+                                console.error('Fatal HLS error');
                                 hls.destroy();
                                 break;
                         }
                     }
                 });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            } else if (video && video.canPlayType('application/vnd.apple.mpegurl')) {
                 // Native HLS support (Safari, iOS)
                 video.src = hlsPlaylistUrl;
             } else {
-                console.error('HLS is not supported in this browser');
-                alert('Your browser does not support HLS video streaming. Please use a modern browser.');
+                console.error('HLS not supported');
+                if (video) {
+                    video.innerHTML = '<p>Your browser does not support HLS video streaming.</p>';
+                }
             }
             
             // Prevent seeking/forwarding by hiding progress bar and blocking seek attempts
             if (video) {
                 video.addEventListener('loadedmetadata', function() {
-                // Hide progress bar elements using CSS
-                const style = document.createElement('style');
-                style.textContent = `
-                    video::-webkit-media-controls-timeline,
-                    video::-webkit-media-controls-current-time-display,
-                    video::-webkit-media-controls-time-remaining-display,
-                    video::-webkit-media-controls-timeline-container {
-                        display: none !important;
+                    // Hide progress bar elements using CSS
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        video::-webkit-media-controls-timeline,
+                        video::-webkit-media-controls-current-time-display,
+                        video::-webkit-media-controls-time-remaining-display,
+                        video::-webkit-media-controls-timeline-container {
+                            display: none !important;
+                        }
+                        video::-moz-media-controls-timeline {
+                            display: none !important;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                });
+                
+                // Prevent seeking by intercepting seek attempts
+                let lastTime = 0;
+                let isUserSeeking = false;
+                
+                video.addEventListener('timeupdate', function() {
+                    if (!isUserSeeking) {
+                        const currentTime = video.currentTime;
+                        // If time jumps forward more than 2 seconds (user trying to seek), reset to last valid position
+                        if (currentTime > lastTime + 2) {
+                            video.currentTime = lastTime;
+                        } else {
+                            lastTime = currentTime;
+                        }
                     }
-                    video::-moz-media-controls-timeline {
-                        display: none !important;
+                });
+                
+                // Prevent seeking via seeking event
+                video.addEventListener('seeking', function(e) {
+                    if (video.currentTime > lastTime + 1) {
+                        e.preventDefault();
+                        video.currentTime = lastTime;
                     }
-                `;
-                document.head.appendChild(style);
-            });
-            
-            // Prevent seeking by intercepting seek attempts
-            let lastTime = 0;
-            let isUserSeeking = false;
-            
-            video.addEventListener('timeupdate', function() {
-                if (!isUserSeeking) {
-                    const currentTime = video.currentTime;
-                    // If time jumps forward more than 2 seconds (user trying to seek), reset to last valid position
-                    if (currentTime > lastTime + 2) {
+                });
+                
+                video.addEventListener('seeked', function() {
+                    if (video.currentTime > lastTime + 1) {
                         video.currentTime = lastTime;
                     } else {
-                        lastTime = currentTime;
+                        lastTime = video.currentTime;
                     }
-                }
-            });
-            
-            // Prevent seeking via seeking event
-            video.addEventListener('seeking', function(e) {
-                if (video.currentTime > lastTime + 1) {
+                    isUserSeeking = false;
+                });
+                
+                // Prevent seeking via keyboard
+                video.addEventListener('keydown', function(e) {
+                    // Prevent arrow keys from seeking
+                    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                });
+                
+                // Disable right-click context menu on video
+                video.addEventListener('contextmenu', function(e) {
                     e.preventDefault();
-                    video.currentTime = lastTime;
-                }
-            });
-            
-            video.addEventListener('seeked', function() {
-                if (video.currentTime > lastTime + 1) {
-                    video.currentTime = lastTime;
-                } else {
-                    lastTime = video.currentTime;
-                }
-                isUserSeeking = false;
-            });
-            
-            // Prevent seeking via keyboard
-            video.addEventListener('keydown', function(e) {
-                // Prevent arrow keys from seeking
-                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-            });
-            
-            // Disable right-click context menu on video
-            video.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-                return false;
-            });
+                    return false;
+                });
 
-            video.addEventListener('play', () => {
-                if (playIcon) playIcon.classList.add('d-none');
-                if (pauseIcon) pauseIcon.classList.remove('d-none');
-            });
+                video.addEventListener('play', () => {
+                    if (playIcon) playIcon.classList.add('d-none');
+                    if (pauseIcon) pauseIcon.classList.remove('d-none');
+                });
 
-            video.addEventListener('pause', () => {
-                if (playIcon) playIcon.classList.remove('d-none');
-                if (pauseIcon) pauseIcon.classList.add('d-none');
-            });
+                video.addEventListener('pause', () => {
+                    if (playIcon) playIcon.classList.remove('d-none');
+                    if (pauseIcon) pauseIcon.classList.add('d-none');
+                });
 
-            video.addEventListener('ended', () => {
-                // Show and scroll to form section if it exists
-                const formSection = document.getElementById('googleFormSection');
-                if (formSection) {
-                    // Show form section if it was hidden
-                    formSection.classList.remove('hidden');
-                    formSection.style.display = 'block';
-                    // Scroll to form section
-                    setTimeout(() => {
-                        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        // Highlight the form section briefly
-                        formSection.style.transition = 'box-shadow 0.3s';
-                        formSection.style.boxShadow = '0 0 20px rgba(34, 197, 94, 0.5)';
+                video.addEventListener('ended', () => {
+                    // Show and scroll to form section if it exists
+                    const formSection = document.getElementById('googleFormSection');
+                    if (formSection) {
+                        // Show form section if it was hidden
+                        formSection.classList.remove('hidden');
+                        formSection.style.display = 'block';
+                        // Scroll to form section
                         setTimeout(() => {
-                            formSection.style.boxShadow = '';
-                        }, 2000);
-                    }, 100);
-                }
-            });
+                            formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            // Highlight the form section briefly
+                            formSection.style.transition = 'box-shadow 0.3s';
+                            formSection.style.boxShadow = '0 0 20px rgba(34, 197, 94, 0.5)';
+                            setTimeout(() => {
+                                formSection.style.boxShadow = '';
+                            }, 2000);
+                        }, 100);
+                    }
+                });
+
+                video.addEventListener('timeupdate', () => {
+                    if (video.duration && (video.duration - video.currentTime < 1)) {
+                        console.log("Approaching end of video...");
+                    }
+                });
+            } // End of if (video) block
 
             // Mark as complete
             const markCompleteBtn = document.getElementById('markCompleteBtn');
@@ -498,12 +526,6 @@
                     }
                 });
             }
-
-            video.addEventListener('timeupdate', () => {
-                if (video.duration && (video.duration - video.currentTime < 1)) {
-                    console.log("Approaching end of video...");
-                }
-            });
 
             // Fullscreen toggle
             if (fullscreenBtn) {
