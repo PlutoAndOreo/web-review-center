@@ -18,62 +18,102 @@
         <form action="{{ route('admin.students.update', $student->id) }}" method="POST" id="editStudentForm">
             @csrf
             <div class="card-body">
+                @if(session('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ session('success') }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                @endif
 
-                <!-- First Name -->
-                <div class="form-group">
-                    <label for="first_name">First Name</label>
-                    <input 
-                        type="text" 
-                        class="form-control" 
-                        name="first_name" 
-                        id="first_name" 
-                        value="{{ old('first_name', $student->first_name) }}" 
-                        required>
+                @if(session('error'))
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {{ session('error') }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                @endif
+
+                <!-- First Name and Last Name in a row -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="first_name">First Name <span class="text-danger">*</span></label>
+                            <input 
+                                type="text" 
+                                class="form-control @error('first_name') is-invalid @enderror" 
+                                name="first_name" 
+                                id="first_name" 
+                                value="{{ old('first_name', $student->first_name) }}" 
+                                required>
+                            @error('first_name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="last_name">Last Name <span class="text-danger">*</span></label>
+                            <input 
+                                type="text" 
+                                class="form-control @error('last_name') is-invalid @enderror" 
+                                name="last_name" 
+                                id="last_name" 
+                                value="{{ old('last_name', $student->last_name) }}" 
+                                required>
+                            @error('last_name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Last Name -->
-                <div class="form-group">
-                    <label for="last_name">Last Name</label>
-                    <input 
-                        type="text" 
-                        class="form-control" 
-                        name="last_name" 
-                        id="last_name" 
-                        value="{{ old('last_name', $student->last_name) }}" 
-                        required>
-                </div>
-
-                <!-- Email -->
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input 
-                        type="email" 
-                        class="form-control" 
-                        name="email" 
-                        id="email" 
-                        value="{{ old('email', $student->email) }}" 
-                        required>
-                </div>
-
-                <!-- Phone -->
-                <div class="form-group">
-                    <label for="phone">Phone</label>
-                    <input 
-                        type="text" 
-                        class="form-control" 
-                        name="phone" 
-                        id="phone" 
-                        value="{{ old('phone', $student->phone) }}">
+                <!-- Email and Phone in a row -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="email">Email <span class="text-danger">*</span></label>
+                            <input 
+                                type="email" 
+                                class="form-control @error('email') is-invalid @enderror" 
+                                name="email" 
+                                id="email" 
+                                value="{{ old('email', $student->email) }}" 
+                                required>
+                            @error('email')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="phone">Phone</label>
+                            <input 
+                                type="text" 
+                                class="form-control @error('phone') is-invalid @enderror" 
+                                name="phone" 
+                                id="phone" 
+                                value="{{ old('phone', $student->phone) }}">
+                            @error('phone')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Address -->
                 <div class="form-group">
                     <label for="address">Address</label>
                     <textarea 
-                        class="form-control" 
+                        class="form-control @error('address') is-invalid @enderror" 
                         name="address" 
                         id="address" 
                         rows="3">{{ old('address', $student->address) }}</textarea>
+                    @error('address')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <!-- School Graduated -->
@@ -81,10 +121,13 @@
                     <label for="school_graduated">School Graduated</label>
                     <input 
                         type="text" 
-                        class="form-control" 
+                        class="form-control @error('school_graduated') is-invalid @enderror" 
                         name="school_graduated" 
                         id="school_graduated" 
                         value="{{ old('school_graduated', $student->school_graduated) }}">
+                    @error('school_graduated')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <!-- Graduation Year -->
@@ -92,12 +135,15 @@
                     <label for="graduation_year">Graduation Year</label>
                     <input 
                         type="number" 
-                        class="form-control" 
+                        class="form-control @error('graduation_year') is-invalid @enderror" 
                         name="graduation_year" 
                         id="graduation_year" 
                         value="{{ old('graduation_year', $student->graduation_year) }}"
                         min="1950" 
                         max="{{ date('Y') + 5 }}">
+                    @error('graduation_year')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <!-- Active Status -->
@@ -149,22 +195,56 @@
                     </div>
 
                     <div id="manualPasswordFields">
-                        <label for="new_password">New Password</label>
                         <div class="form-group">
-                            <input 
-                                type="password" 
-                                class="form-control" 
-                                name="new_password" 
-                                id="new_password">
+                            <label for="new_password">New Password</label>
+                            <div class="input-group">
+                                <input 
+                                    type="password" 
+                                    class="form-control @error('new_password') is-invalid @enderror" 
+                                    name="new_password" 
+                                    id="new_password"
+                                    placeholder="New password">
+                                <div class="input-group-append">
+                                    <button 
+                                        type="button" 
+                                        class="btn btn-outline-secondary"
+                                        onclick="togglePassword('new_password', 'eyeNewPassword')">
+                                        <svg id="eyeNewPassword" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                @error('new_password')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="new_password_confirmation">Confirm New Password</label>
-                            <input 
-                                type="password" 
-                                class="form-control" 
-                                name="new_password_confirmation" 
-                                id="new_password_confirmation">
+                            <div class="input-group">
+                                <input 
+                                    type="password" 
+                                    class="form-control @error('new_password_confirmation') is-invalid @enderror" 
+                                    name="new_password_confirmation" 
+                                    id="new_password_confirmation"
+                                    placeholder="Confirm password">
+                                <div class="input-group-append">
+                                    <button 
+                                        type="button" 
+                                        class="btn btn-outline-secondary"
+                                        onclick="togglePassword('new_password_confirmation', 'eyePasswordConfirmation')">
+                                        <svg id="eyePasswordConfirmation" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                @error('new_password_confirmation')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -180,6 +260,7 @@
 @stop
 
 @section('js')
+<script src="{{ asset('js/password-icon.js') }}"></script>
 <script>
     function togglePasswordFields() {
         const changePassword = document.getElementById('change_password').checked;
