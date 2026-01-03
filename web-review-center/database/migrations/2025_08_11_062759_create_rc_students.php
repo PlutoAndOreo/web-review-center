@@ -19,7 +19,6 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->date('birthdate')->nullable();
             $table->string('gender')->nullable();
-            $table->string('student_number')->unique();
             $table->string('course')->nullable();
             $table->timestamps();
         });

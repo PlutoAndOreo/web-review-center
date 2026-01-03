@@ -338,9 +338,23 @@
                 }
             }
             
+            // Check if MediaSource and SourceBuffer are still valid
+            function isMediaSourceValid() {
+                return mediaSource && 
+                       mediaSource.readyState === 'open' && 
+                       sourceBuffer && 
+                       mediaSource.sourceBuffers.length > 0 &&
+                       mediaSource.sourceBuffers[0] === sourceBuffer;
+            }
+            
             // Load initial 10-second chunk
             async function loadInitialChunk() {
                 if (isBuffering || !sourceBuffer) return;
+                
+                if (!isMediaSourceValid()) {
+                    console.warn('MediaSource invalid, cannot load initial chunk');
+                    return;
+                }
                 
                 try {
                     // Estimate bytes for 10 seconds (rough estimate)
@@ -358,11 +372,37 @@
                     
                     const chunk = await response.arrayBuffer();
                     
+                    // Check again before appending
+                    if (!isMediaSourceValid()) {
+                        console.warn('MediaSource became invalid while loading chunk');
+                        isBuffering = false;
+                        return;
+                    }
+                    
                     // Wait for source buffer to be ready
                     if (sourceBuffer.updating) {
                         await new Promise(resolve => {
-                            sourceBuffer.addEventListener('updateend', resolve, { once: true });
+                            const checkUpdate = () => {
+                                if (!isMediaSourceValid()) {
+                                    isBuffering = false;
+                                    resolve();
+                                    return;
+                                }
+                                if (!sourceBuffer.updating) {
+                                    resolve();
+                                } else {
+                                    sourceBuffer.addEventListener('updateend', checkUpdate, { once: true });
+                                }
+                            };
+                            checkUpdate();
                         });
+                    }
+                    
+                    // Final check before append
+                    if (!isMediaSourceValid()) {
+                        console.warn('MediaSource invalid before append');
+                        isBuffering = false;
+                        return;
                     }
                     
                     sourceBuffer.appendBuffer(chunk);
@@ -376,23 +416,39 @@
                             // Refine bitrate estimate
                             estimatedBitrate = fileSize / videoDuration;
                         }
-                        // Continue loading chunks
-                        loadNextChunk();
+                        // Continue loading chunks only if still valid
+                        if (isMediaSourceValid()) {
+                            loadNextChunk();
+                        }
                     }, { once: true });
                     
                 } catch (error) {
                     console.error('Error loading initial chunk:', error);
                     isBuffering = false;
-                    fallbackToDirectStream();
+                    if (error.name === 'InvalidStateError' || error.message.includes('SourceBuffer')) {
+                        // MediaSource was closed, fallback to direct stream
+                        fallbackToDirectStream();
+                    }
                 }
             }
             
             // Load next chunk progressively
             async function loadNextChunk() {
                 if (isBuffering || !sourceBuffer || currentStart >= fileSize) {
-                    if (currentStart >= fileSize && mediaSource && mediaSource.readyState === 'open') {
-                        mediaSource.endOfStream();
+                    if (currentStart >= fileSize && isMediaSourceValid()) {
+                        try {
+                            mediaSource.endOfStream();
+                        } catch (e) {
+                            console.warn('Error ending stream:', e);
+                        }
                     }
+                    return;
+                }
+                
+                // Check if MediaSource is still valid
+                if (!isMediaSourceValid()) {
+                    console.warn('MediaSource invalid, cannot load next chunk');
+                    isBuffering = false;
                     return;
                 }
                 
@@ -404,12 +460,19 @@
                     
                     if (secondsAhead > 30) {
                         // Already buffered enough, check again later
-                        setTimeout(loadNextChunk, 1000);
+                        setTimeout(() => {
+                            if (isMediaSourceValid()) {
+                                loadNextChunk();
+                            }
+                        }, 1000);
                         return;
                     }
                 }
                 
                 try {
+                    // Evict old buffers before loading new chunk to prevent quota exceeded
+                    await evictOldBuffers();
+                    
                     const end = Math.min(currentStart + CHUNK_SIZE - 1, fileSize - 1);
                     
                     isBuffering = true;
@@ -421,39 +484,168 @@
                     
                     const chunk = await response.arrayBuffer();
                     
+                    // Check again before appending
+                    if (!isMediaSourceValid()) {
+                        console.warn('MediaSource became invalid while loading chunk');
+                        isBuffering = false;
+                        return;
+                    }
+                    
                     // Wait for source buffer to be ready
                     if (sourceBuffer.updating) {
                         await new Promise(resolve => {
-                            sourceBuffer.addEventListener('updateend', resolve, { once: true });
+                            const checkUpdate = () => {
+                                if (!isMediaSourceValid()) {
+                                    isBuffering = false;
+                                    resolve();
+                                    return;
+                                }
+                                if (!sourceBuffer.updating) {
+                                    resolve();
+                                } else {
+                                    sourceBuffer.addEventListener('updateend', checkUpdate, { once: true });
+                                }
+                            };
+                            checkUpdate();
                         });
                     }
                     
-                    sourceBuffer.appendBuffer(chunk);
+                    // Final check before append
+                    if (!isMediaSourceValid()) {
+                        console.warn('MediaSource invalid before append');
+                        isBuffering = false;
+                        return;
+                    }
+                    
+                    // Try to append, catch QuotaExceededError
+                    try {
+                        sourceBuffer.appendBuffer(chunk);
+                    } catch (appendError) {
+                        if (appendError.name === 'QuotaExceededError') {
+                            console.warn('QuotaExceededError, evicting more buffers and retrying...');
+                            // Evict more aggressively
+                            await evictOldBuffers();
+                            // Try again after eviction
+                            if (isMediaSourceValid() && !sourceBuffer.updating) {
+                                sourceBuffer.appendBuffer(chunk);
+                            } else {
+                                throw appendError;
+                            }
+                        } else {
+                            throw appendError;
+                        }
+                    }
                     
                     sourceBuffer.addEventListener('updateend', () => {
                         isBuffering = false;
                         currentStart = end + 1;
                         
-                        // Continue loading if not at end
-                        if (currentStart < fileSize) {
+                        // Continue loading if not at end and still valid
+                        if (currentStart < fileSize && isMediaSourceValid()) {
                             loadNextChunk();
-                        } else if (mediaSource && mediaSource.readyState === 'open') {
-                            mediaSource.endOfStream();
+                        } else if (currentStart >= fileSize && isMediaSourceValid()) {
+                            try {
+                                mediaSource.endOfStream();
+                            } catch (e) {
+                                console.warn('Error ending stream:', e);
+                            }
                         }
                     }, { once: true });
                     
                 } catch (error) {
                     console.error('Error loading chunk:', error);
                     isBuffering = false;
-                    // Retry after a delay
-                    setTimeout(loadNextChunk, 1000);
+                    
+                    // If it's an InvalidStateError, the SourceBuffer was removed
+                    if (error.name === 'InvalidStateError' || error.message.includes('SourceBuffer')) {
+                        console.warn('SourceBuffer invalid, falling back to direct stream');
+                        fallbackToDirectStream();
+                        return;
+                    }
+                    
+                    // If it's a QuotaExceededError, try evicting and retry
+                    if (error.name === 'QuotaExceededError') {
+                        console.warn('QuotaExceededError, attempting to evict buffers...');
+                        evictOldBuffers().then(() => {
+                            if (isMediaSourceValid() && !isBuffering) {
+                                setTimeout(() => {
+                                    if (isMediaSourceValid() && !isBuffering) {
+                                        loadNextChunk();
+                                    }
+                                }, 500);
+                            }
+                        });
+                        return;
+                    }
+                    
+                    // Retry after a delay only if MediaSource is still valid
+                    if (isMediaSourceValid()) {
+                        setTimeout(() => {
+                            if (isMediaSourceValid() && !isBuffering) {
+                                loadNextChunk();
+                            }
+                        }, 1000);
+                    }
                 }
             }
             
             // Get the end of the buffered range
             function getBufferedEnd() {
-                if (!sourceBuffer || sourceBuffer.buffered.length === 0) return 0;
+                if (!sourceBuffer || !isMediaSourceValid() || sourceBuffer.buffered.length === 0) return 0;
                 return sourceBuffer.buffered.end(sourceBuffer.buffered.length - 1);
+            }
+            
+            // Evict old buffered data to free up space
+            async function evictOldBuffers() {
+                if (!isMediaSourceValid() || !sourceBuffer || sourceBuffer.updating) {
+                    return;
+                }
+                
+                try {
+                    const currentTime = video.currentTime || 0;
+                    const buffered = sourceBuffer.buffered;
+                    
+                    if (buffered.length === 0) return;
+                    
+                    // Keep 10 seconds before current time and remove everything before that
+                    const keepStart = Math.max(0, currentTime - 10);
+                    
+                    // Find ranges to remove (everything before keepStart)
+                    for (let i = 0; i < buffered.length; i++) {
+                        const rangeStart = buffered.start(i);
+                        const rangeEnd = buffered.end(i);
+                        
+                        // If this range ends before keepStart, remove it
+                        if (rangeEnd < keepStart) {
+                            if (!sourceBuffer.updating && isMediaSourceValid()) {
+                                sourceBuffer.remove(rangeStart, rangeEnd);
+                                // Wait for removal to complete
+                                await new Promise(resolve => {
+                                    if (!isMediaSourceValid()) {
+                                        resolve();
+                                        return;
+                                    }
+                                    sourceBuffer.addEventListener('updateend', resolve, { once: true });
+                                });
+                            }
+                        } else if (rangeStart < keepStart && rangeEnd > keepStart) {
+                            // Range overlaps with keepStart, remove only the part before keepStart
+                            if (!sourceBuffer.updating && isMediaSourceValid()) {
+                                sourceBuffer.remove(rangeStart, keepStart);
+                                // Wait for removal to complete
+                                await new Promise(resolve => {
+                                    if (!isMediaSourceValid()) {
+                                        resolve();
+                                        return;
+                                    }
+                                    sourceBuffer.addEventListener('updateend', resolve, { once: true });
+                                });
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Error evicting buffers:', error);
+                }
             }
             
             // Fallback to direct streaming if MSE fails
@@ -465,9 +657,14 @@
             
             // Monitor buffering and load chunks as needed
             video.addEventListener('progress', () => {
-                if (isInitialized && sourceBuffer && !isBuffering) {
+                if (isInitialized && isMediaSourceValid() && !isBuffering) {
                     const bufferedEnd = getBufferedEnd();
                     const currentTime = video.currentTime || 0;
+                    
+                    // Periodically evict old buffers to prevent quota exceeded
+                    if (Math.random() < 0.1) { // 10% chance on each progress event
+                        evictOldBuffers();
+                    }
                     
                     // If we're getting close to the end of buffered content, load more
                     if (bufferedEnd - currentTime < 10 && currentStart < fileSize) {
@@ -477,9 +674,14 @@
             });
             
             video.addEventListener('timeupdate', () => {
-                if (isInitialized && sourceBuffer && !isBuffering) {
+                if (isInitialized && isMediaSourceValid() && !isBuffering) {
                     const bufferedEnd = getBufferedEnd();
                     const currentTime = video.currentTime || 0;
+                    
+                    // Periodically evict old buffers (every 5 seconds of playback)
+                    if (Math.floor(currentTime) % 5 === 0 && Math.floor(currentTime) !== Math.floor(video.currentTime - 0.1)) {
+                        evictOldBuffers();
+                    }
                     
                     // Load more chunks if we're getting close to the end
                     if (bufferedEnd - currentTime < 15 && currentStart < fileSize) {
@@ -487,6 +689,16 @@
                     }
                 }
             });
+            
+            // Handle MediaSource errors
+            if (mediaSource) {
+                mediaSource.addEventListener('error', (e) => {
+                    console.error('MediaSource error:', e);
+                    if (mediaSource.readyState === 'closed') {
+                        fallbackToDirectStream();
+                    }
+                });
+            }
 
             // Play/Pause toggle
             playPauseBtn.addEventListener('click', async () => {
