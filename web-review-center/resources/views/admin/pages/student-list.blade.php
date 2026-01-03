@@ -101,7 +101,7 @@
                                             <a href="{{ route('admin.students.edit', $student->id) }}" 
                                                 class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
                                             <a href="{{ route('admin.students.video-progress', $student->id) }}" 
-                                                class="text-green-600 hover:text-green-900 mr-3">Status</a>
+                                                class="text-green-600 hover:text-green-900 mr-3">Progress</a>
                                             <form action="{{ route('admin.students.destroy', $student->id) }}" 
                                                 method="POST" class="inline"
                                                 onsubmit="return confirm('Are you sure you want to delete this student?')">
