@@ -137,6 +137,25 @@
                     $('body').toggleClass('sidebar-collapse');
                 });
             }
+            
+            // Prevent AdminLTE IFrame widget from initializing on elements that don't exist or aren't meant for it
+            // AdminLTE auto-initializes IFrame widgets, so we need to prevent it from running on null elements
+            if (typeof $ !== 'undefined' && $.fn.IFrame) {
+                // Override AdminLTE's auto-initialization to add null checks
+                const originalIFrame = $.fn.IFrame;
+                $.fn.IFrame = function(options) {
+                    // Only initialize if element exists and is in DOM
+                    if (this.length && this[0] && document.body.contains(this[0])) {
+                        try {
+                            return originalIFrame.call(this, options);
+                        } catch (e) {
+                            console.warn('IFrame initialization failed:', e);
+                            return this;
+                        }
+                    }
+                    return this;
+                };
+            }
         });
     </script>
     
