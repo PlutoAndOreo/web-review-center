@@ -43,35 +43,37 @@
                 @endif
 
                 <!-- First Name -->
-                <div class="form-group">
-                    <label for="first_name">First Name <span class="text-danger">*</span></label>
-                    <input 
-                        type="text" 
-                        class="form-control @error('first_name') is-invalid @enderror" 
-                        name="first_name" 
-                        id="first_name" 
-                        value="{{ old('first_name') }}" 
-                        required>
-                    @error('first_name')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label for="first_name">First Name <span class="text-danger">*</span></label>
+                        <input 
+                            type="text" 
+                            class="form-control @error('first_name') is-invalid @enderror" 
+                            name="first_name" 
+                            id="first_name" 
+                            value="{{ old('first_name') }}" 
+                            >
+                        @error('first_name')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
 
-                <!-- Last Name -->
-                <div class="form-group">
-                    <label for="last_name">Last Name <span class="text-danger">*</span></label>
-                    <input 
-                        type="text" 
-                        class="form-control @error('last_name') is-invalid @enderror" 
-                        name="last_name" 
-                        id="last_name" 
-                        value="{{ old('last_name') }}" 
-                        required>
-                    @error('last_name')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <!-- Last Name -->
+                    <div class="form-group">
+                        <label for="last_name">Last Name <span class="text-danger">*</span></label>
+                        <input 
+                            type="text" 
+                            class="form-control @error('last_name') is-invalid @enderror" 
+                            name="last_name" 
+                            id="last_name" 
+                            value="{{ old('last_name') }}" 
+                            >
+                        @error('last_name')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
-
+                
                 <!-- Email -->
                 <div class="form-group">
                     <label for="email">Email <span class="text-danger">*</span></label>
@@ -81,7 +83,7 @@
                         name="email" 
                         id="email" 
                         value="{{ old('email') }}" 
-                        required>
+                        >
                     @error('email')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -102,28 +104,56 @@
                 </div>
 
                 <!-- Password -->
-                <div class="form-group">
-                    <label for="password">Password <span class="text-danger">*</span></label>
-                    <input 
-                        type="password" 
-                        class="form-control @error('password') is-invalid @enderror" 
-                        name="password" 
-                        id="password" 
-                        required>
-                    @error('password')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-                <!-- Password Confirmation -->
-                <div class="form-group">
-                    <label for="password_confirmation">Confirm Password <span class="text-danger">*</span></label>
-                    <input 
-                        type="password" 
-                        class="form-control" 
-                        name="password_confirmation" 
-                        id="password_confirmation" 
-                        required>
+                    <div class="form-group">
+                        <label for="password">Password <span class="text-danger">*</span></label>
+                        <div class="relative">
+                            <input 
+                                type="password" 
+                                class="form-control @error('password') is-invalid @enderror" 
+                                name="password" 
+                                id="password" 
+                                >
+                                <button
+                                    type="button"
+                                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                                    onclick="togglePassword('password', 'eyeNewPassword')"
+                                >
+                                <svg id="eyeNewPassword"  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                </svg>   
+                            </button>
+                        </div>
+                        
+                        @error('password')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <!-- Password Confirmation -->
+                    <div class="form-group">
+                        <label for="password_confirmation">Confirm Password <span class="text-danger">*</span></label>
+                        <div class="relative">
+                            <input 
+                                type="password"     
+                                class="form-control" 
+                                name="password_confirmation" 
+                                id="password_confirmation" 
+                            >
+                            <button
+                                type="button"
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                                onclick="togglePassword('password_confirmation', 'eyeConfirmPassword')"
+                            >
+                            <svg id="eyeConfirmPassword"  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            </svg>   
+                        </div>
+                        
+                    </div>
                 </div>
 
                 <!-- Role -->
@@ -133,7 +163,7 @@
                         class="form-control @error('role') is-invalid @enderror" 
                         name="role" 
                         id="role" 
-                        required>
+                        >
                         <option value="">Select Role</option>
                         <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Admin</option>
                         <option value="super_admin" {{ old('role') === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
@@ -164,12 +194,13 @@
 
             <div class="card-footer">
                 <button type="submit" class="btn btn-primary">Create User</button>
-                <a href="{{ route('admin.users.list') }}" class="btn btn-default">Cancel</a>
             </div>
         </form>
     </div>
 </div>
 @stop
 
-@section('scripts')
+@section('js')
+    <script src="{{ asset('js/password-icon.js') }}"></script>
+@endsection
 @include('admin.components.admin-scripts')
