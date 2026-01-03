@@ -153,8 +153,9 @@ class ProcessUploadVideo implements ShouldQueue
         // -hls_segment_filename: Segment naming pattern (segment_000.ts, segment_001.ts, etc.)
         if ($hasWatermark) {
             // With watermark: overlay logo on video
+            // scale=200:-1 means 200 pixels wide, height auto-calculated to maintain aspect ratio
             $ffmpegCommand = sprintf(
-                'ffmpeg -i %s -i %s -filter_complex "[1:v]scale=100:-1[wm];[0:v][wm]overlay=W-w-10:H-h-10" -map 0:a? -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 128k -hls_time 10 -hls_list_size 0 -hls_segment_filename %s/segment_%%03d.ts -start_number 0 -f hls -y %s',
+                'ffmpeg -i %s -i %s -filter_complex "[1:v]scale=200:-1[wm];[0:v][wm]overlay=W-w-20:H-h-20" -map 0:a? -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 128k -hls_time 10 -hls_list_size 0 -hls_segment_filename %s/segment_%%03d.ts -start_number 0 -f hls -y %s',
                 escapeshellarg($inputPath),
                 escapeshellarg($watermarkPath),
                 escapeshellarg($hlsOutputPath),
