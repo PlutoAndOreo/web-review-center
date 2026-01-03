@@ -22,7 +22,6 @@ class StudentSeeder extends Seeder
                 'phone' => '09170000001',
                 'birthdate' => '2000-05-15',
                 'gender' => 'Male',
-                'student_number' => 'STU-0001',
                 'course' => 'Computer Science',
                 'created_at' => now(),
                 'updated_at' => now(),
