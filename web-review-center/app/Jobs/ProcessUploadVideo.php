@@ -106,20 +106,29 @@ class ProcessUploadVideo implements ShouldQueue
         $hlsOutputDir = "videos/{$today}/hls_{$videoId}";
         $hlsPlaylistPath = "{$hlsOutputDir}/playlist.m3u8";
         
-        // Create directory structure (creates parent directories if needed)
+        // Get parent directory path (videos/YYYY-MM-DD/)
+        $parentDir = Storage::disk('private')->path("videos/{$today}");
+        
+        // Create parent directory first if it doesn't exist
+        if (!file_exists($parentDir)) {
+            Storage::disk('private')->makeDirectory("videos/{$today}");
+        }
+        
+        // Set permissions on parent directory immediately after creation
+        // This ensures the parent directory is owned by www-data before creating subdirectories
+        $this->setDirectoryPermissionsRecursive($parentDir);
+        
+        // Now create the HLS subdirectory
         Storage::disk('private')->makeDirectory($hlsOutputDir);
         $hlsOutputPath = Storage::disk('private')->path($hlsOutputDir);
-        
-        // Set permissions on parent directory (videos/YYYY-MM-DD/) first
-        $parentDir = Storage::disk('private')->path("videos/{$today}");
-        if (file_exists($parentDir)) {
-            $this->setFilePermissions($parentDir, true);
-        }
         
         // Set permissions recursively on the entire HLS directory structure
         // This ensures videos/YYYY-MM-DD/hls_{videoId}/ and all contents have www-data ownership
         // Equivalent to: chown -R www-data:www-data videos/YYYY-MM-DD/hls_{videoId}
         $this->setDirectoryPermissionsRecursive($hlsOutputPath);
+        
+        // Also ensure parent directory permissions are still correct (in case subdirectory creation changed them)
+        $this->setDirectoryPermissionsRecursive($parentDir);
 
         Log::info("Converting video to HLS format for ID: {$videoId}");
 
@@ -246,19 +255,66 @@ class ProcessUploadVideo implements ShouldQueue
         }
         
         try {
-            // Use exec to run chown -R for recursive ownership change
-            // This is more reliable than PHP's chown for recursive operations
-            $chownCommand = sprintf(
-                'chown -R www-data:www-data %s 2>&1',
-                escapeshellarg($directoryPath)
-            );
+            // Determine if we're running as root
+            $isRoot = false;
+            $currentUser = 'unknown';
+            
+            if (function_exists('posix_geteuid') && function_exists('posix_getpwuid')) {
+                $uid = posix_geteuid();
+                $userInfo = posix_getpwuid($uid);
+                $currentUser = $userInfo['name'] ?? 'unknown';
+                $isRoot = ($uid === 0 || $currentUser === 'root');
+            } else {
+                // Fallback: check if we can chown (if we can, we're likely root or have privileges)
+                $testFile = $directoryPath . '/.test_' . uniqid();
+                @touch($testFile);
+                if (file_exists($testFile)) {
+                    $testChown = @chown($testFile, 'www-data');
+                    @unlink($testFile);
+                    // If chown worked, we have privileges
+                    $isRoot = $testChown;
+                }
+            }
+            
+            Log::info("Setting permissions for {$directoryPath} (current user: {$currentUser}, isRoot: " . ($isRoot ? 'yes' : 'no') . ")");
+            
+            // Build chown command - try with sudo if not root, otherwise direct chown
+            if (!$isRoot) {
+                // Try sudo first (passwordless sudo should be configured for www-data user)
+                $chownCommand = sprintf(
+                    'sudo chown -R www-data:www-data %s 2>&1',
+                    escapeshellarg($directoryPath)
+                );
+            } else {
+                // Running as root, can chown directly
+                $chownCommand = sprintf(
+                    'chown -R www-data:www-data %s 2>&1',
+                    escapeshellarg($directoryPath)
+                );
+            }
             
             exec($chownCommand, $output, $returnCode);
             
             if ($returnCode !== 0) {
-                Log::warning("Failed to set recursive ownership for {$directoryPath}: " . implode("\n", $output));
-                // Fallback to individual file permissions
-                return $this->setDirectoryPermissionsFallback($directoryPath);
+                // If sudo failed and we're not root, try without sudo (might work if process has CAP_CHOWN)
+                if (!$isRoot) {
+                    Log::info("Sudo chown failed, trying direct chown for {$directoryPath}");
+                    $chownCommand = sprintf(
+                        'chown -R www-data:www-data %s 2>&1',
+                        escapeshellarg($directoryPath)
+                    );
+                    exec($chownCommand, $output, $returnCode);
+                }
+                
+                if ($returnCode !== 0) {
+                    Log::error("Failed to set recursive ownership for {$directoryPath}");
+                    Log::error("Command: {$chownCommand}");
+                    Log::error("Output: " . implode("\n", $output));
+                    Log::error("Return code: {$returnCode}");
+                    Log::error("Current user: {$currentUser}, isRoot: " . ($isRoot ? 'yes' : 'no'));
+                    // Fallback to individual file permissions
+                    return $this->setDirectoryPermissionsFallback($directoryPath);
+                }
             }
             
             // Also set permissions recursively
