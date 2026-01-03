@@ -118,9 +118,24 @@
         // Sidebar toggle functionality (AdminLTE handles this automatically)
         // The sidebar will be always visible on mobile, but can be toggled for icon-only view
         $(document).ready(function() {
-            // Initialize AdminLTE pushmenu
-            if ($('[data-widget="pushmenu"]').length) {
-                $('[data-widget="pushmenu"]').PushMenu('toggle');
+            // Wait for AdminLTE to be fully loaded
+            if (typeof $ !== 'undefined' && $.fn.pushMenu) {
+                // Initialize AdminLTE pushmenu - just initialize, don't toggle
+                $('[data-widget="pushmenu"]').each(function() {
+                    if ($(this).length) {
+                        try {
+                            $(this).pushMenu();
+                        } catch (e) {
+                            console.warn('PushMenu initialization failed:', e);
+                        }
+                    }
+                });
+            } else {
+                // Fallback if AdminLTE is not loaded
+                $('[data-widget="pushmenu"]').on('click', function(e) {
+                    e.preventDefault();
+                    $('body').toggleClass('sidebar-collapse');
+                });
             }
         });
     </script>
