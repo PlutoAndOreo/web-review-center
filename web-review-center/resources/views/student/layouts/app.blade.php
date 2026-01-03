@@ -91,18 +91,21 @@
             @include('student.parts.sidebar')
         @endif
 
-        <!-- Content Wrapper -->
-        <div class="content-wrapper">
-            @if(!request()->routeIs('student.register') && !request()->routeIs('student.login'))
+        @if(request()->routeIs('student.register') || request()->routeIs('student.login'))
+            <!-- No content-wrapper for register/login pages -->
+            @yield('content')
+        @else
+            <!-- Content Wrapper -->
+            <div class="content-wrapper">
                 @include('student.parts.topbar')
-            @endif
-            
-            <!-- Main content -->
-            <div class="content">
-                @yield('content')
+                
+                <!-- Main content -->
+                <div class="content">
+                    @yield('content')
+                </div>
             </div>
-        </div>
-        <!-- /.content-wrapper -->
+            <!-- /.content-wrapper -->
+        @endif
     </div>
     <!-- ./wrapper -->
 
