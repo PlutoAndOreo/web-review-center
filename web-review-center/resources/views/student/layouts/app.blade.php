@@ -15,38 +15,12 @@
     @vite(['resources/js/app.js'])
     @stack('styles')
     
-    <style>
-        /* Ensure sidebar works on mobile */
-        @media (max-width: 991.98px) {
-            .main-sidebar {
-                transform: translateX(-100%);
-                transition: transform 0.3s ease-in-out;
-            }
-            
-            .sidebar-open .main-sidebar {
-                transform: translateX(0);
-            }
-            
-            .sidebar-overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.5);
-                z-index: 1037;
-            }
-            
-            .sidebar-open .sidebar-overlay {
-                display: block;
-            }
-        }
-    </style>
+
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed">
     <div class="wrapper">
+
         @if(!request()->routeIs('student.register') && !request()->routeIs('student.login'))
             @include('student.parts.sidebar')
             <!-- Sidebar overlay for mobile -->
@@ -65,12 +39,6 @@
             </div>
         </div>
         <!-- /.content-wrapper -->
-
-        <!-- Footer (optional) -->
-        <footer class="main-footer">
-            <strong>Copyright &copy; {{ date('Y') }} <a href="#">Review Center</a>.</strong>
-            All rights reserved.
-        </footer>
     </div>
     <!-- ./wrapper -->
 
@@ -90,6 +58,8 @@
             $('body').removeClass('sidebar-open');
         });
     </script>
+    
+    <script src="{{ asset('js/password-icon.js') }}"></script>
     
     @stack('js')
 </body>

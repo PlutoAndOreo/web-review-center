@@ -51,7 +51,34 @@
             @enderror
         </div>
         <div class="mb-4">
-            <label for="password" class="block text-gray-700 mb-2">New Password</label>
+            <label for="phone" class="block text-gray-700 mb-2">Phone</label>
+            <input type="text" name="phone" id="phone" value="{{ old('phone', $admin->phone) }}"
+                class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-300">
+            @error('phone')
+                <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+        <div class="mb-4">
+            <label for="role" class="block text-gray-700 mb-2">Role <span class="text-red-500">*</span></label>
+            <select name="role" id="role" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-300" required>
+                <option value="admin" {{ old('role', $admin->role) === 'admin' ? 'selected' : '' }}>Admin</option>
+                <option value="super_admin" {{ old('role', $admin->role) === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
+                <option value="editor" {{ old('role', $admin->role) === 'editor' ? 'selected' : '' }}>Editor</option>
+            </select>
+            @error('role')
+                <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+        <div class="mb-4">
+            <div class="flex items-center">
+                <input type="checkbox" name="is_active" id="is_active" value="1" 
+                    {{ old('is_active', $admin->is_active) ? 'checked' : '' }}
+                    class="mr-2">
+                <label for="is_active" class="text-gray-700">Active</label>
+            </div>
+        </div>
+        <div class="mb-4">
+            <label for="password" class="block text-gray-700 mb-2">New Password (leave blank to keep current)</label>
             <input type="password" name="password" id="password"
                 class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-300"
                 autocomplete="new-password">

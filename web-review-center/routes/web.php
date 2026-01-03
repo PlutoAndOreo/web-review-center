@@ -27,6 +27,9 @@ use App\Http\Controllers\Student\CommentController;
         return redirect()->route('student.login'); // route name for student login
     });
 
+    // CSRF Token endpoint (public, no auth required)
+    Route::get('/api/csrf-token', [\App\Http\Controllers\CsrfTokenController::class, 'token'])->name('api.csrf-token');
+
     // Route::middleware('guest:admin')->group(function () {
         Route::post('admin/register', [RegisteredUserController::class, 'store']);
         Route::get('admin/login', [AuthenticatedSessionController::class, 'create'])->name('admin.login');
@@ -39,8 +42,11 @@ use App\Http\Controllers\Student\CommentController;
         
         Route::prefix('admin/users')->name('admin.users.')->group(function () {
             Route::get('/',[UserController::class,'index'])->name('list');
-            Route::get('/{id}/edit', [UserController::class,'edit']);
+            Route::get('/create',[UserController::class,'create'])->name('create');
+            Route::post('/store',[UserController::class,'store'])->name('store');
+            Route::get('/{id}/edit', [UserController::class,'edit'])->name('edit');
             Route::post('/{id}/update', [UserController::class,'update'])->name('update');
+            Route::delete('/{id}', [UserController::class,'destroy'])->name('destroy');
         });
 
         Route::prefix('admin/videos')->name('admin.videos.')->group(function () {
@@ -56,6 +62,8 @@ use App\Http\Controllers\Student\CommentController;
 
         Route::prefix('admin/students')->name('admin.students.')->group(function () {
             Route::get('/', [StudentAdminDashboardController::class, 'index'])->name('list');
+            Route::get('/create', [StudentAdminDashboardController::class, 'create'])->name('create');
+            Route::post('/store', [StudentAdminDashboardController::class, 'store'])->name('store');
             Route::get('/{id}/edit', [StudentAdminDashboardController::class, 'edit'])->name('edit');
             Route::post('/{id}/update', [StudentAdminDashboardController::class, 'update'])->name('update');
             Route::delete('/{id}', [StudentAdminDashboardController::class, 'destroy'])->name('destroy');

@@ -3,7 +3,7 @@
 @section('title', 'Dashboard')
 
 @section('css')
-@vite('resources/css/app.css')
+    @vite('resources/css/app.css')
 @endsection
 
 @section('content_header')
@@ -11,6 +11,7 @@
 @stop
 
 @section('content')
+
 @include('admin.components.logout')
 
 <main class="flex-1 p-6 bg-gray-50 min-h-screen">
@@ -19,7 +20,6 @@
         <div class="bg-white shadow rounded-xl p-5 border-l-4 border-sky-500">
             <p class="text-gray-600 font-semibold">Total Users</p>
             <h2 class="text-3xl font-bold text-sky-700 mt-2">{{ $totalAdminUser }}</h2>
-            <p class="text-xs text-gray-500 mt-1">Compared to last week</p>
         </div>
         <div class="bg-white shadow rounded-xl p-5 border-l-4 border-rose-500">
             <p class="text-gray-600 font-semibold">Videos</p>

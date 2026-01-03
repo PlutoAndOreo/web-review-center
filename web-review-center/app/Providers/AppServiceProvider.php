@@ -27,13 +27,15 @@ class AppServiceProvider extends ServiceProvider
             $view->with('userName', auth()->user()->name ?? 'Guest');
         });
 
-        // Share admin profile URL with adminlte views
+        // Share admin profile URL and CSRF token with adminlte views
         View::composer('adminlte::page', function ($view) {
             $user = auth()->guard('admin')->user();
             if ($user) {
                 $profileUrl = url('/admin/users/' . $user->id . '/edit');
                 $view->with('adminProfileUrl', $profileUrl);
             }
+            // Ensure CSRF token is available
+            $view->with('csrfToken', csrf_token());
         });
 
         app('events')->listen(BuildingMenu::class, function (BuildingMenu $event) {

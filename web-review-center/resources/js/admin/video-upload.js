@@ -128,6 +128,13 @@
 
         xhr.open('POST', uploadUrl, true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (csrfToken) {
+            xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken.getAttribute('content'));
+        }
+        
     xhr.send(formData);
 });
 })();
