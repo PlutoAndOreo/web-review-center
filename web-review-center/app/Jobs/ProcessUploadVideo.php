@@ -106,9 +106,20 @@ class ProcessUploadVideo implements ShouldQueue
         $hlsOutputDir = "videos/{$today}/hls_{$videoId}";
         $hlsPlaylistPath = "{$hlsOutputDir}/playlist.m3u8";
         
+        // Create directory structure (creates parent directories if needed)
         Storage::disk('private')->makeDirectory($hlsOutputDir);
         $hlsOutputPath = Storage::disk('private')->path($hlsOutputDir);
-        $this->setFilePermissions($hlsOutputPath, true);
+        
+        // Set permissions on parent directory (videos/YYYY-MM-DD/) first
+        $parentDir = Storage::disk('private')->path("videos/{$today}");
+        if (file_exists($parentDir)) {
+            $this->setFilePermissions($parentDir, true);
+        }
+        
+        // Set permissions recursively on the entire HLS directory structure
+        // This ensures videos/YYYY-MM-DD/hls_{videoId}/ and all contents have www-data ownership
+        // Equivalent to: chown -R www-data:www-data videos/YYYY-MM-DD/hls_{videoId}
+        $this->setDirectoryPermissionsRecursive($hlsOutputPath);
 
         Log::info("Converting video to HLS format for ID: {$videoId}");
 
@@ -158,17 +169,9 @@ class ProcessUploadVideo implements ShouldQueue
         
         Log::info("FFmpeg HLS conversion completed successfully" . ($hasWatermark ? " with watermark" : "") . " for video ID: {$videoId}");
         
-        // Set file permissions for all HLS files
-        $playlistPath = Storage::disk('private')->path($hlsPlaylistPath);
-        if (file_exists($playlistPath)) {
-            $this->setFilePermissions($playlistPath);
-        }
-        
-        // Set permissions for all segment files
-        $files = glob($hlsOutputPath . '/*.ts');
-        foreach ($files as $file) {
-            $this->setFilePermissions($file);
-        }
+        // Set permissions recursively on entire HLS directory (like chown -R www-data:www-data)
+        // This ensures all files and subdirectories have correct ownership
+        $this->setDirectoryPermissionsRecursive($hlsOutputPath);
 
         Log::info("HLS conversion completed for video ID: {$videoId}");
 
@@ -225,6 +228,88 @@ class ProcessUploadVideo implements ShouldQueue
             return true;
         } catch (\Exception $e) {
             Log::warning("Failed to set permissions for {$path}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Set directory permissions recursively (like chown -R www-data:www-data)
+     * 
+     * @param string $directoryPath Directory path
+     * @return bool
+     */
+    private function setDirectoryPermissionsRecursive(string $directoryPath): bool
+    {
+        if (!file_exists($directoryPath) || !is_dir($directoryPath)) {
+            Log::warning("Directory does not exist: {$directoryPath}");
+            return false;
+        }
+        
+        try {
+            // Use exec to run chown -R for recursive ownership change
+            // This is more reliable than PHP's chown for recursive operations
+            $chownCommand = sprintf(
+                'chown -R www-data:www-data %s 2>&1',
+                escapeshellarg($directoryPath)
+            );
+            
+            exec($chownCommand, $output, $returnCode);
+            
+            if ($returnCode !== 0) {
+                Log::warning("Failed to set recursive ownership for {$directoryPath}: " . implode("\n", $output));
+                // Fallback to individual file permissions
+                return $this->setDirectoryPermissionsFallback($directoryPath);
+            }
+            
+            // Also set permissions recursively
+            $chmodCommand = sprintf(
+                'find %s -type d -exec chmod 755 {} \\; && find %s -type f -exec chmod 644 {} \\; 2>&1',
+                escapeshellarg($directoryPath),
+                escapeshellarg($directoryPath)
+            );
+            
+            exec($chmodCommand, $chmodOutput, $chmodReturnCode);
+            
+            if ($chmodReturnCode !== 0) {
+                Log::warning("Failed to set recursive permissions for {$directoryPath}: " . implode("\n", $chmodOutput));
+            }
+            
+            Log::info("Successfully set recursive permissions for directory: {$directoryPath}");
+            return true;
+        } catch (\Exception $e) {
+            Log::warning("Exception setting recursive permissions for {$directoryPath}: " . $e->getMessage());
+            // Fallback to individual file permissions
+            return $this->setDirectoryPermissionsFallback($directoryPath);
+        }
+    }
+
+    /**
+     * Fallback method to set permissions file by file
+     * Used when chown -R fails
+     * 
+     * @param string $directoryPath Directory path
+     * @return bool
+     */
+    private function setDirectoryPermissionsFallback(string $directoryPath): bool
+    {
+        try {
+            // Set directory permissions
+            $this->setFilePermissions($directoryPath, true);
+            
+            // Recursively set permissions for all files and subdirectories
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($directoryPath, \RecursiveDirectoryIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::SELF_FIRST
+            );
+            
+            foreach ($iterator as $item) {
+                $isDir = $item->isDir();
+                $this->setFilePermissions($item->getPathname(), $isDir);
+            }
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::error("Fallback permission setting failed for {$directoryPath}: " . $e->getMessage());
             return false;
         }
     }
