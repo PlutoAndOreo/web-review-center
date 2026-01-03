@@ -15,6 +15,72 @@
     @vite(['resources/js/app.js'])
     @stack('styles')
     
+    <style>
+        /* Make sidebar always visible on mobile */
+        @media (max-width: 991.98px) {
+            /* Force sidebar to be visible */
+            .main-sidebar {
+                transform: translateX(0) !important;
+                margin-left: 0 !important;
+                display: block !important;
+            }
+            
+            /* Make sidebar narrower on mobile (icon-only mode) */
+            .main-sidebar {
+                width: 70px !important;
+            }
+            
+            /* Adjust content wrapper to account for sidebar */
+            .content-wrapper {
+                margin-left: 70px !important;
+            }
+            
+            /* Show only icons on mobile sidebar */
+            .sidebar .nav-link p {
+                display: none !important;
+            }
+            
+            .sidebar .nav-link {
+                justify-content: center !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+            
+            /* Hide user panel text on mobile */
+            .sidebar .user-panel .info {
+                display: none !important;
+            }
+            
+            .sidebar .user-panel {
+                padding: 0.5rem !important;
+                justify-content: center !important;
+            }
+            
+            /* Remove overlay since sidebar is always visible */
+            .sidebar-overlay {
+                display: none !important;
+            }
+            
+            /* Ensure sidebar doesn't collapse on mobile */
+            body.sidebar-collapse .main-sidebar {
+                transform: translateX(0) !important;
+            }
+        }
+        
+        /* Ensure sidebar is visible on all screen sizes */
+        .main-sidebar {
+            display: block !important;
+        }
+        
+        /* Better mobile touch targets */
+        @media (max-width: 991.98px) {
+            .sidebar .nav-link {
+                min-height: 48px;
+                display: flex;
+                align-items: center;
+            }
+        }
+    </style>
 
 </head>
 
@@ -23,8 +89,6 @@
 
         @if(!request()->routeIs('student.register') && !request()->routeIs('student.login'))
             @include('student.parts.sidebar')
-            <!-- Sidebar overlay for mobile -->
-            <div class="sidebar-overlay" onclick="document.body.classList.remove('sidebar-open')"></div>
         @endif
 
         <!-- Content Wrapper -->
@@ -48,14 +112,13 @@
     <script src="{{ asset('vendor/adminlte/dist/js/adminlte.min.js') }}"></script>
     
     <script>
-        // Mobile sidebar toggle
-        $(document).on('click', '[data-widget="pushmenu"]', function() {
-            $('body').toggleClass('sidebar-open');
-        });
-        
-        // Close sidebar when clicking overlay
-        $(document).on('click', '.sidebar-overlay', function() {
-            $('body').removeClass('sidebar-open');
+        // Sidebar toggle functionality (AdminLTE handles this automatically)
+        // The sidebar will be always visible on mobile, but can be toggled for icon-only view
+        $(document).ready(function() {
+            // Initialize AdminLTE pushmenu
+            if ($('[data-widget="pushmenu"]').length) {
+                $('[data-widget="pushmenu"]').PushMenu('toggle');
+            }
         });
     </script>
     
