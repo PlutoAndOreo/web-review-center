@@ -10,7 +10,7 @@
     @section('content')
 	@include('admin.components.logout')
 
-    <div class="min-h-screen flex items-center justify-center bg-gray-100 py-10">
+    <div class="min-h-screen flex items-center justify-center  py-10">
         <div class="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-lg">
             <div class="flex items-center justify-between mb-6">
                 <a href="{{ route('admin.videos.list') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800">

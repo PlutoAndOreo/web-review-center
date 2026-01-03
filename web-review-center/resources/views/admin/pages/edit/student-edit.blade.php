@@ -100,6 +100,22 @@
                         max="{{ date('Y') + 5 }}">
                 </div>
 
+                <!-- Active Status -->
+                <div class="form-group">
+                    <div class="form-check">
+                        <input 
+                            type="checkbox" 
+                            class="form-check-input" 
+                            name="is_active" 
+                            id="is_active" 
+                            value="1"
+                            {{ old('is_active', $student->is_active ?? true) ? 'checked' : '' }}>
+                        <label class="form-check-label" for="is_active">
+                            Active
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Password Management -->
                 <div class="form-group">
                     <div class="form-check">
@@ -133,8 +149,8 @@
                     </div>
 
                     <div id="manualPasswordFields">
+                        <label for="new_password">New Password</label>
                         <div class="form-group">
-                            <label for="new_password">New Password</label>
                             <input 
                                 type="password" 
                                 class="form-control" 

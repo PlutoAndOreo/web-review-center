@@ -23,7 +23,7 @@
 
           <label for="password" class="block text-gray-700 font-medium mb-1">Password</label>
           <div class="relative">
-              <input type="password" id="password" name="password" placeholder="••••••••"
+              <input type="password" id="password" name="password" placeholder="******"
                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 <button
                     type="button"

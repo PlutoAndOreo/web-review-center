@@ -15,7 +15,7 @@ class DashboardController extends Controller
     {
         $totalAdminUser = Admin::count();
         $totalVideos = Video::count();
-        $totalStudents = Student::count();
+        $totalStudents = Student::where('is_active',1)->count();
         $totalSubjects = Subject::where('is_active',1)->count();
         
         return view('admin.pages.dashboard', 

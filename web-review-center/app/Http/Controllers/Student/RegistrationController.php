@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\Video;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class RegistrationController extends Controller
 {
@@ -33,7 +34,7 @@ class RegistrationController extends Controller
             'address'    => $validated['address'] ?? null,
             'school_graduated' => $validated['school_graduated'] ?? null,
             'graduation_year' => $validated['graduation_year'] ?? null,
-            'password'   => bcrypt($validated['password']),
+            'password'   => Hash::make($validated['password']),
         ]);
 
         auth()->guard('student')->login($student);

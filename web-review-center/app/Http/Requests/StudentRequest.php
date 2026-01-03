@@ -26,7 +26,7 @@ class StudentRequest extends FormRequest
             'last_name'  => 'required|string|max:255',
             'email'      => 'required|email|unique:rc_students,email',
             'area_code'  => 'required|string|regex:/^\+[1-9]\d{1,3}$/',
-            'phone'      => 'required|string|regex:/^[0-9]{7,15}$/',
+            'phone'      => 'required|string|regex:/^[0-9]{10}$/',
             'address'    => 'nullable|string|max:500',
             'school_graduated' => 'nullable|string|max:255',
             'graduation_year' => 'nullable|integer|min:1950|max:' . (date('Y') + 5),
