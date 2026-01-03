@@ -110,17 +110,24 @@ class ProcessUploadVideo implements ShouldQueue
         $parentDir = Storage::disk('private')->path("videos/{$today}");
         
         // Create parent directory first if it doesn't exist
+        // Then IMMEDIATELY force ownership to www-data:www-data
         if (!file_exists($parentDir)) {
             Storage::disk('private')->makeDirectory("videos/{$today}");
+            
+            // Force ownership immediately after creation (before any other operations)
+            // This ensures the directory is owned by www-data even if created by root
+            $this->forceDirectoryOwnership($parentDir);
+        } else {
+            // Directory exists, but might be owned by root - fix it
+            $this->forceDirectoryOwnership($parentDir);
         }
-        
-        // Set permissions on parent directory immediately after creation
-        // This ensures the parent directory is owned by www-data before creating subdirectories
-        $this->setDirectoryPermissionsRecursive($parentDir);
         
         // Now create the HLS subdirectory
         Storage::disk('private')->makeDirectory($hlsOutputDir);
         $hlsOutputPath = Storage::disk('private')->path($hlsOutputDir);
+        
+        // Force ownership on subdirectory immediately after creation
+        $this->forceDirectoryOwnership($hlsOutputPath);
         
         // Set permissions recursively on the entire HLS directory structure
         // This ensures videos/YYYY-MM-DD/hls_{videoId}/ and all contents have www-data ownership
@@ -237,6 +244,75 @@ class ProcessUploadVideo implements ShouldQueue
             return true;
         } catch (\Exception $e) {
             Log::warning("Failed to set permissions for {$path}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Force directory ownership to www-data:www-data immediately
+     * This is called right after directory creation to ensure proper ownership
+     * 
+     * @param string $directoryPath Directory path
+     * @return bool
+     */
+    private function forceDirectoryOwnership(string $directoryPath): bool
+    {
+        if (!file_exists($directoryPath)) {
+            return false;
+        }
+        
+        try {
+            // Determine if we're running as root
+            $isRoot = false;
+            $currentUser = 'unknown';
+            
+            if (function_exists('posix_geteuid') && function_exists('posix_getpwuid')) {
+                $uid = posix_geteuid();
+                $userInfo = posix_getpwuid($uid);
+                $currentUser = $userInfo['name'] ?? 'unknown';
+                $isRoot = ($uid === 0 || $currentUser === 'root');
+            }
+            
+            // Build chown command - try with sudo if not root, otherwise direct chown
+            if (!$isRoot) {
+                // Try sudo first (passwordless sudo should be configured for www-data user)
+                $chownCommand = sprintf(
+                    'sudo chown www-data:www-data %s 2>&1',
+                    escapeshellarg($directoryPath)
+                );
+            } else {
+                // Running as root, can chown directly
+                $chownCommand = sprintf(
+                    'chown www-data:www-data %s 2>&1',
+                    escapeshellarg($directoryPath)
+                );
+            }
+            
+            exec($chownCommand, $output, $returnCode);
+            
+            if ($returnCode !== 0) {
+                // If sudo failed and we're not root, try without sudo
+                if (!$isRoot) {
+                    $chownCommand = sprintf(
+                        'chown www-data:www-data %s 2>&1',
+                        escapeshellarg($directoryPath)
+                    );
+                    exec($chownCommand, $output, $returnCode);
+                }
+                
+                if ($returnCode !== 0) {
+                    Log::warning("Failed to force ownership for {$directoryPath}: " . implode("\n", $output));
+                    return false;
+                }
+            }
+            
+            // Also set directory permissions (755)
+            chmod($directoryPath, 0755);
+            
+            Log::info("Forced ownership to www-data:www-data for directory: {$directoryPath}");
+            return true;
+        } catch (\Exception $e) {
+            Log::warning("Exception forcing ownership for {$directoryPath}: " . $e->getMessage());
             return false;
         }
     }
