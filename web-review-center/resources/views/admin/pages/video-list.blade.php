@@ -2,14 +2,14 @@
 
 @section('title', 'Video List')
 
-@section('css')
-@vite('resources/css/app.css')
+    @section('css')
+        @vite('resources/css/app.css')
     @endsection
 
     @section('content')
     @include('admin.components.logout')
 
-    <div class="min-h-screen bg-gray-100 py-6">
+    <div class="min-h-screen  py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white shadow rounded-lg">
                 <div class="px-4 py-5 sm:p-6">
@@ -39,6 +39,9 @@
                                 <tr>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Status</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Title</th>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -63,6 +66,20 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @forelse($videos as $video)
                                     <tr>
+                                        @if($video->status === 'Draft')
+                                        
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
+                                                {{ $video->status }}
+                                            </td>
+                                        @elseif ($video->status === 'Published')
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                                                {{ $video->status }}
+                                            </td>
+                                        @else
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300">
+                                                {{ $video->status }}
+                                            </td>
+                                        @endif
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             {{ $video->title }}
                                         </td>
@@ -78,7 +95,7 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             @if($video->video_thumb)
-                                                <img src="{{ url(ltrim($video->video_thumb, '/')) }}"
+                                                <img src="{{ Storage::url($video->video_thumb) }}"
                                                     alt="Video Thumbnail"
                                                     class="w-20 h-12">
                                             @else
@@ -91,7 +108,7 @@
                                         <td class="px-6 py-4 text-sm text-gray-500">
                                             @if($video->google_form_link)
                                                 <a href="{{ $video->google_form_link }}" target="_blank"
-                                                    class="text-blue-600 hover:underline">
+                                                    class="text-blue-600 hover:underline truncate">
                                                     {{ Str::limit($video->google_form_link, 30) }}
                                                 </a>
                                             @else

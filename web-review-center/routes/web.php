@@ -23,6 +23,12 @@ use App\Http\Controllers\Student\DashboardController as StudentDashboardControll
 use App\Http\Controllers\Student\StudentVideoController;
 use App\Http\Controllers\Student\CommentController;
 
+    Route::get('/', function () {
+        return redirect()->route('student.login'); // route name for student login
+    });
+
+    // CSRF Token endpoint (public, no auth required)
+    Route::get('/api/csrf-token', [\App\Http\Controllers\CsrfTokenController::class, 'token'])->name('api.csrf-token');
 
     // Route::middleware('guest:admin')->group(function () {
         Route::post('admin/register', [RegisteredUserController::class, 'store']);
@@ -36,8 +42,11 @@ use App\Http\Controllers\Student\CommentController;
         
         Route::prefix('admin/users')->name('admin.users.')->group(function () {
             Route::get('/',[UserController::class,'index'])->name('list');
-            Route::get('/{id}/edit', [UserController::class,'edit']);
+            Route::get('/create',[UserController::class,'create'])->name('create');
+            Route::post('/store',[UserController::class,'store'])->name('store');
+            Route::get('/{id}/edit', [UserController::class,'edit'])->name('edit');
             Route::post('/{id}/update', [UserController::class,'update'])->name('update');
+            Route::delete('/{id}', [UserController::class,'destroy'])->name('destroy');
         });
 
         Route::prefix('admin/videos')->name('admin.videos.')->group(function () {
@@ -53,6 +62,8 @@ use App\Http\Controllers\Student\CommentController;
 
         Route::prefix('admin/students')->name('admin.students.')->group(function () {
             Route::get('/', [StudentAdminDashboardController::class, 'index'])->name('list');
+            Route::get('/create', [StudentAdminDashboardController::class, 'create'])->name('create');
+            Route::post('/store', [StudentAdminDashboardController::class, 'store'])->name('store');
             Route::get('/{id}/edit', [StudentAdminDashboardController::class, 'edit'])->name('edit');
             Route::post('/{id}/update', [StudentAdminDashboardController::class, 'update'])->name('update');
             Route::delete('/{id}', [StudentAdminDashboardController::class, 'destroy'])->name('destroy');
@@ -97,9 +108,10 @@ Route::get('admin/videos/progress/{token}', [VideoController::class, 'progress']
         Route::post('/info', [StudentDashboardController::class, 'update'])->name('updateInfo');
 
         // Videos
+        Route::get('/videos/list', [StudentVideoController::class, 'list'])->name('videos.list');
         Route::get('/videos/{id}', [StudentVideoController::class, 'index'])->whereNumber('id')->name('videos');
-        Route::get('/video-file-size/{id}', [StudentVideoController::class, 'getVideoFileSize'])->name('video.size');
-        Route::get('/video-chunk/{id}', [StudentVideoController::class, 'stream'])->name('video.chunk');
+        Route::get('/video-hls/{id}/playlist.m3u8', [StudentVideoController::class, 'hlsPlaylist'])->name('video.hls.playlist');
+        Route::get('/video-hls/{id}/segment/{segment}', [StudentVideoController::class, 'hlsSegment'])->where('segment', '.*')->name('video.hls.segment');
         Route::get('/video-stream/{id}', [StudentVideoController::class, 'stream'])->name('video.stream');
         Route::get('/videos/{id}/completion-status', [StudentVideoController::class, 'checkCompletionStatus'])->name('videos.completion-status');
         // Logout

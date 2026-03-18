@@ -13,10 +13,10 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $totalAdminUser = Admin::count();
+        $totalAdminUser = Admin::where('is_active',1)->count();
         $totalVideos = Video::count();
-        $totalStudents = Student::count();
-        $totalSubjects = Subject::count();
+        $totalStudents = Student::where('is_active',1)->count();
+        $totalSubjects = Subject::where('is_active',1)->count();
         
         return view('admin.pages.dashboard', 
             compact(

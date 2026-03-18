@@ -26,3 +26,27 @@
 </script>
 @endif
 
+{{-- Ensure CSRF token meta tag exists --}}
+@if(!isset($csrfToken))
+    @php
+        $csrfToken = csrf_token();
+    @endphp
+@endif
+<script>
+    // Ensure CSRF token meta tag exists in head
+    (function() {
+        if (!document.querySelector('meta[name="csrf-token"]')) {
+            const meta = document.createElement('meta');
+            meta.name = 'csrf-token';
+            meta.content = '{{ $csrfToken }}';
+            document.head.appendChild(meta);
+        } else {
+            // Update existing token
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            if (meta) {
+                meta.content = '{{ $csrfToken }}';
+            }
+        }
+    })();
+</script>
+

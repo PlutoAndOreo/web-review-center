@@ -1,56 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Student' }}</title>
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @stack('styles')
-</head>
-<body >
-@if(!request()->routeIs('student.register') && !request()->routeIs('student.login'))
-        <!-- <nav class="w-full flex items-center justify-between p-4 bg-white shadow">
-            <div>
-                <button type="button" id="openLogout" class="px-3 py-1 rounded bg-red-500 text-white">Logout</button>
-                <form id="studentLogoutForm" method="POST" action="{{ route('student.logout') }}" class="hidden">
-                    @csrf
-                </form>
-            </div>
-        </nav> -->
-        @endif
+    <!-- AdminLTE CSS -->
+    <link rel="stylesheet" href="{{ asset('vendor/adminlte/dist/css/adminlte.min.css') }}">
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    @yield('content')
-
+    @vite(['resources/js/app.js'])
+    @stack('styles')
+    
     <style>
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 10000; }
-        .modal-overlay.show { display: flex; }
-        .modal-card { width: 100%; max-width: 420px; background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        /* Make sidebar always visible on mobile */
+        @media (max-width: 991.98px) {
+            /* Force sidebar to be visible */
+            .main-sidebar {
+                transform: translateX(0) !important;
+                margin-left: 0 !important;
+                display: block !important;
+            }
+            
+            /* Make sidebar narrower on mobile (icon-only mode) */
+            .main-sidebar {
+                width: 70px !important;
+            }
+            
+            /* Adjust content wrapper to account for sidebar */
+            .content-wrapper {
+                margin-left: 70px !important;
+            }
+            
+            /* Show only icons on mobile sidebar */
+            .sidebar .nav-link p {
+                display: none !important;
+            }
+            
+            .sidebar .nav-link {
+                justify-content: center !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+            
+            /* Hide user panel text on mobile */
+            .sidebar .user-panel .info {
+                display: none !important;
+            }
+            
+            .sidebar .user-panel {
+                padding: 0.5rem !important;
+                justify-content: center !important;
+            }
+            
+            /* Remove overlay since sidebar is always visible */
+            .sidebar-overlay {
+                display: none !important;
+            }
+            
+            /* Ensure sidebar doesn't collapse on mobile */
+            body.sidebar-collapse .main-sidebar {
+                transform: translateX(0) !important;
+            }
+        }
+        
+        /* Ensure sidebar is visible on all screen sizes */
+        .main-sidebar {
+            display: block !important;
+        }
+        
+        /* Better mobile touch targets */
+        @media (max-width: 991.98px) {
+            .sidebar .nav-link {
+                min-height: 48px;
+                display: flex;
+                align-items: center;
+            }
+        }
     </style>
-    <div class="modal-overlay" id="logoutModal" aria-hidden="true">
-        <div class="modal-card">
-            <h3 class="text-lg font-semibold mb-2">Confirm Logout</h3>
-            <p class="text-sm text-gray-600 mb-4">Are you sure you want to logout?</p>
-            <div class="flex justify-end gap-2">
-                <button id="cancelLogout" class="px-3 py-1 rounded border">Cancel</button>
-                <button id="confirmLogout" class="px-3 py-1 rounded bg-red-600 text-white">Logout</button>
-            </div>
-        </div>
-    </div>
-    @stack('js')
-    <script>
-        (function(){
-            const btnOpen = document.getElementById('openLogout');
-            const modal = document.getElementById('logoutModal');
-            const btnCancel = document.getElementById('cancelLogout');
-            const btnConfirm = document.getElementById('confirmLogout');
-            const form = document.getElementById('studentLogoutForm');
-            btnOpen && btnOpen.addEventListener('click', ()=> modal.classList.add('show'));
-            btnCancel && btnCancel.addEventListener('click', ()=> modal.classList.remove('show'));
-            btnConfirm && btnConfirm.addEventListener('click', ()=> form.submit());
-        })();
-    </script>
 
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
+
+        @if(!request()->routeIs('student.register') && !request()->routeIs('student.login'))
+            @include('student.parts.sidebar')
+        @endif
+
+        @if(request()->routeIs('student.register') || request()->routeIs('student.login'))
+            <!-- No content-wrapper for register/login pages -->
+            @yield('content')
+        @else
+            <!-- Content Wrapper -->
+            <div class="content-wrapper">
+                @include('student.parts.topbar')
+                
+                <!-- Main content -->
+                <div class="content">
+                    @yield('content')
+                </div>
+            </div>
+            <!-- /.content-wrapper -->
+        @endif
+    </div>
+    <!-- ./wrapper -->
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- AdminLTE JS -->
+    <script src="{{ asset('vendor/adminlte/dist/js/adminlte.min.js') }}"></script>
+    
+    <script>
+        // Sidebar toggle functionality (AdminLTE handles this automatically)
+        // The sidebar will be always visible on mobile, but can be toggled for icon-only view
+        $(document).ready(function() {
+            // Wait for AdminLTE to be fully loaded
+            if (typeof $ !== 'undefined' && $.fn.pushMenu) {
+                // Initialize AdminLTE pushmenu - just initialize, don't toggle
+                $('[data-widget="pushmenu"]').each(function() {
+                    if ($(this).length) {
+                        try {
+                            $(this).pushMenu();
+                        } catch (e) {
+                            console.warn('PushMenu initialization failed:', e);
+                        }
+                    }
+                });
+            } else {
+                // Fallback if AdminLTE is not loaded
+                $('[data-widget="pushmenu"]').on('click', function(e) {
+                    e.preventDefault();
+                    $('body').toggleClass('sidebar-collapse');
+                });
+            }
+            
+            // Prevent AdminLTE IFrame widget from initializing on elements that don't exist or aren't meant for it
+            // AdminLTE auto-initializes IFrame widgets, so we need to prevent it from running on null elements
+            if (typeof $ !== 'undefined' && $.fn.IFrame) {
+                // Override AdminLTE's auto-initialization to add null checks
+                const originalIFrame = $.fn.IFrame;
+                $.fn.IFrame = function(options) {
+                    // Only initialize if element exists and is in DOM
+                    if (this.length && this[0] && document.body.contains(this[0])) {
+                        try {
+                            return originalIFrame.call(this, options);
+                        } catch (e) {
+                            console.warn('IFrame initialization failed:', e);
+                            return this;
+                        }
+                    }
+                    return this;
+                };
+            }
+        });
+    </script>
+    
+    <script src="{{ asset('js/password-icon.js') }}"></script>
+    
+    @stack('js')
 </body>
+
 </html>

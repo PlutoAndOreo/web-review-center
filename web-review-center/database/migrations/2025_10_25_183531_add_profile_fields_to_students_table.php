@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::table('rc_students', function (Blueprint $table) {
             $table->string('address')->nullable();
             $table->string('school_graduated')->nullable();
+            $table->string('password');
             $table->year('graduation_year')->nullable();
         });
     }

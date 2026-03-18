@@ -3,10 +3,8 @@
 @section('title', 'Student Info')
 
 @section('content')
-<div class="max-w-2xl mx-auto p-6">
-    <h1 class="text-2xl font-bold mb-6">Your Information</h1>
-    
-    <div class="bg-white shadow rounded-lg p-6">
+<div class="max-w-2xl mx-auto p-6">    
+    <div class="bg-white p-6 rounded-lg shadow-xl">
         @if(session('success'))
             <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" 
                 class="mb-4 p-4 text-green-800 bg-green-100 border border-green-200 rounded-lg ">
@@ -16,7 +14,14 @@
         <form action="{{ route('student.updateInfo') }}" method="POST">
             @csrf
 
-            <div class="mb-4">
+            <a href="{{ route('student.dashboard') }}" mb-10 class="inline-flex items-center text-black-600 hover:underline mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
+                    <path fill-rule="evenodd" d="M10.72 11.47a.75.75 0 0 0 0 1.06l7.5 7.5a.75.75 0 1 0 1.06-1.06L12.31 12l6.97-6.97a.75.75 0 0 0-1.06-1.06l-7.5 7.5Z" clip-rule="evenodd" />
+                    <path fill-rule="evenodd" d="M4.72 11.47a.75.75 0 0 0 0 1.06l7.5 7.5a.75.75 0 1 0 1.06-1.06L6.31 12l6.97-6.97a.75.75 0 0 0-1.06-1.06l-7.5 7.5Z" clip-rule="evenodd" />
+                </svg>
+            </a>
+            
+            <div class="mb-4 ">
                 <label class="block text-gray-500 text-sm">Enrolled Since</label>
                 <p class="text-gray-900 font-medium">{{ optional($student->created_at)->format('M d, Y') }}</p>
             </div>
@@ -59,53 +64,68 @@
                     @enderror
                 </div>
             </div>
-            <hr class="my-6">
-            <div class="mb-4 relative">
-                <label for="current_password" class="block text-gray-700 text-sm mb-1">Current Password</label>
-                <input type="password" name="current_password" id="current_password"
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-400">
-                <span onclick="togglePassword('current_password')" class="absolute right-3 top-9 cursor-pointer text-sm text-gray-600">👁</span>
-                @error('current_password') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
-            </div>
+            <div class="mt-6"></div>
 
-            <div class="mb-4 relative">
-                <label for="password" class="block text-gray-700 text-sm mb-1">New Password</label>
-                <input type="password" name="password" id="password"
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-400">
-                <span onclick="togglePassword('password')" class="absolute right-3 top-9 cursor-pointer text-sm text-gray-600">👁</span>
+            {{-- Password Update --}}
+
+            <label for="current_password" class="block text-gray-700 mb-1">New Password</label>
+            <div class="relative">
+                <input
+                    id="password"
+                    type="password"
+                    name="password"
+                    placeholder="New password"
+                    class="w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring focus:ring-blue-400"
+                />
+                <button
+                    type="button"
+                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                    onclick="togglePassword('password', 'eyeNewPassword')"
+                >
+                <svg id="eyeNewPassword"  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>            
+                </button>
                 @error('password') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
+            <div class="mt-6"></div>
 
-            <div class="mb-4 relative">
-                <label for="password_confirmation" class="block text-gray-700 text-sm mb-1">Confirm New Password</label>
-                <input type="password" name="password_confirmation" id="password_confirmation"
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-400">
-                <span onclick="togglePassword('password_confirmation')" class="absolute right-3 top-9 cursor-pointer text-sm text-gray-600">👁</span>
-            </div>
-            <div>
+            <label for="password_confirmation" class="block text-gray-700 mb-1">Confirm Password</label>
+            <div class="relative">
+                <input
+                    id="password_confirmation"
+                    type="password"
+                    name="password_confirmation"
+                    placeholder="Confirm password"
+                    class="w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring focus:ring-blue-400"
+                />
+                <button
+                    type="button"
+                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                    onclick="togglePassword('password_confirmation', 'eyeConfirmPassword')"
+                >
                 
+                <svg id="eyeConfirmPassword"  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+                </button>
+                @error('password_confirmation') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
+            <div class="mt-6"></div>
+
             <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
                 <button type="submit" 
-                        class="w-full sm:w-auto px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                class="w-full bg-black text-white py-2 rounded-lg 
+                    hover:bg-gray-300 hover:text-black 
+                    transition flex items-center justify-center"                        >
                     Update Information
                 </button>
 
-                <a href="{{ route('student.dashboard') }}" 
-                    class="w-full sm:w-auto px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-center">
-                    Dashboard
-                </a>
+               
             </div>
         </form>
-
-        
     </div>
 </div>
-
-<script>
-    function togglePassword(fieldId) {
-        const field = document.getElementById(fieldId);
-        field.type = field.type === "password" ? "text" : "password";
-    }
-</script>
 @endsection

@@ -32,7 +32,6 @@
                         <tr>
                             <th>Video Title</th>
                             <th>Subject</th>
-                            <th>Watched</th>
                             <th>Form Completed</th>
                             <th>Completed</th>
                             <th>Retake Allowed</th>
@@ -51,13 +50,6 @@
                             <tr>
                                 <td>{{ $video->title }}</td>
                                 <td>{{ $video->subject->name ?? 'N/A' }}</td>
-                                <td>
-                                    @if($watched)
-                                        <span class="badge badge-success">Yes</span>
-                                    @else
-                                        <span class="badge badge-secondary">No</span>
-                                    @endif
-                                </td>
                                 <td>
                                     @if($formCompleted)
                                         <span class="badge badge-success">Yes</span>

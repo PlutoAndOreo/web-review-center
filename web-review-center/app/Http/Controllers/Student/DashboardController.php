@@ -20,7 +20,7 @@ class DashboardController extends Controller
         $subjects = Subject::where('is_active', true)->get();
         $selectedSubject = $request->get('subject');
         
-        $query = Video::with('subject');
+        $query = Video::where('status','=','Published')->with('subject');
 
         $histories = DB::table('rc_student_histories')
             ->where('student_id', $student->id)
@@ -35,9 +35,9 @@ class DashboardController extends Controller
             )
             ->orderBy('rc_videos.created_at', 'desc')
             ->get();
-        $totalWatched = $histories->where('watched', 1)->count();
-        $totalCompletedForms = $histories->where('form_complete', 1)->count();
 
+        $totalWatched = $histories->where('watched', 1)->count();
+        $totalCompletedForms = $histories->where('form_completed', 1)->count();
         
         if ($selectedSubject && $selectedSubject !== 'all') {
             $query->where('subject_id', $selectedSubject);
@@ -75,9 +75,11 @@ class DashboardController extends Controller
         
             $student->password = Hash::make($request->password);
             $student->save();
-        
-        }
-        return back()->with('success', 'Password updated successfully.');
 
+            return back()->with('success', 'Password updated successfully.');
+        }
+
+        return back()->with('success', 'Updated successfully.');
     }
+    
 }
