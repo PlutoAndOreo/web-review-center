@@ -5,6 +5,7 @@ PHP_CONTAINER = php
 NGINX_CONTAINER = nginx
 MYSQL_CONTAINER = mysql
 NODE_CONTAINER = node
+DOCKER_COMPOSE_PROD = docker compose -f docker-compose-prod.yml
 
 # Default target
 .PHONY: help
@@ -28,6 +29,29 @@ help:
 	@echo "  make cache-clear   Clear Laravel cache/config/routes/views"
 
 # Build all services
+
+build-prod:
+	$(DOCKER_COMPOSE_PROD) build
+
+# Start production services
+.PHONY: up-prod
+up-prod:
+	$(DOCKER_COMPOSE_PROD) up -d
+
+# Stop production services
+.PHONY: down-prod
+down-prod:
+	$(DOCKER_COMPOSE_PROD) down
+
+# Restart production
+.PHONY: restart-prod
+restart-prod: down-prod up-prod
+
+# Logs for production
+.PHONY: logs-prod
+logs-prod:
+	$(DOCKER_COMPOSE_PROD) logs -f
+	
 .PHONY: build
 build:
 	$(DOCKER_COMPOSE) build
