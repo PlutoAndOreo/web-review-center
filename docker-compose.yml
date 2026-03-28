@@ -32,12 +32,12 @@ services:
     container_name: rc-db
     platform: linux/x86_64
     ports:
-      - "3307:3306"
+      - "3306:3306"
     environment:
       - "LANG=C.UTF-8"
-      - "MYSQL_ROOT_PASSWORD=WRC2026" 
+      - "MYSQL_ROOT_PASSWORD=root" 
       - "MYSQL_DATABASE=PowerDev" 
-      - "MYSQL_PASSWORD=WRC2026"
+      - "MYSQL_PASSWORD=admin"
       - "MYSQL_USER=admin"
     volumes:
       - type: volume
