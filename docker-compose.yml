@@ -26,13 +26,6 @@ services:
       - ./web-review-center:/srv/app # replace project_name with your desired value
     depends_on:
       - mysql
-  
-  certbot:
-    image: certbot/certbot
-    container_name: rc-certbot
-    volumes:
-      - ./docker/nginx/certs:/etc/letsencrypt
-      - ./docker/nginx/www:/var/www/certbot
   mysql:
     build:
       context: ./infra/mysql
