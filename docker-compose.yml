@@ -32,7 +32,7 @@ services:
     container_name: rc-db
     platform: linux/x86_64
     ports:
-      - "3306:3306"
+      - "3307:3306"
     environment:
       - "LANG=C.UTF-8"
       - "MYSQL_ROOT_PASSWORD=WRC2026" 
