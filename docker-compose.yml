@@ -35,9 +35,10 @@ services:
       - "3306:3306"
     environment:
       - "LANG=C.UTF-8"
-      - "MYSQL_ROOT_PASSWORD=WRC2026" # replaced password on your desired value
-      - "MYSQL_DATABASE=PowerDev" # replacead database name on your desired value
+      - "MYSQL_ROOT_PASSWORD=WRC2026" 
+      - "MYSQL_DATABASE=PowerDev" 
       - "MYSQL_PASSWORD=WRC2026"
+      - "MYSQL_USER=admin"
     volumes:
       - type: volume
         source: mysql-volume
