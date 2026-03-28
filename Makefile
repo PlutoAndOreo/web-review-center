@@ -1,11 +1,11 @@
 # Variables
-DOCKER_COMPOSE = docker compose
+DOCKER_COMPOSE = docker-compose
 PROJECT_NAME = web-review-center
 PHP_CONTAINER = php
 NGINX_CONTAINER = nginx
 MYSQL_CONTAINER = mysql
 NODE_CONTAINER = node
-DOCKER_COMPOSE_PROD = docker compose -f docker-compose-prod.yml
+DOCKER_COMPOSE_PROD = docker-compose -f docker-compose-prod.yml
 
 # Default target
 .PHONY: help
@@ -51,7 +51,7 @@ restart-prod: down-prod up-prod
 .PHONY: logs-prod
 logs-prod:
 	$(DOCKER_COMPOSE_PROD) logs -f
-	
+
 .PHONY: build
 build:
 	$(DOCKER_COMPOSE) build
