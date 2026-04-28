@@ -25,7 +25,7 @@ class StudentSeeder extends Seeder
                 'course' => 'Computer Science',
                 'created_at' => now(),
                 'updated_at' => now(),
-                'password' => Hash::make('test123'),
+                'password' => Hash::make('Develop7222'),
             ],
         ]);
     }
