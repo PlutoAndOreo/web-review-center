@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Models\Student;
+use App\Models\StudentHistory;
 use App\Models\Video;
 use App\Models\Subject;
 
@@ -18,34 +19,27 @@ class DashboardController extends Controller
         $student = auth()->guard('student')->user();
 
         $subjects = Subject::where('is_active', true)->get();
-        $selectedSubject = $request->get('subject');
-        
-        $query = Video::where('status','=','Published')->with('subject');
+        $videos = Video::where('status', Video::STATUS['PUBLISHED'])->get();
+        $totalSubjects = $subjects->count();
+        $totalVideos = $videos->count();
 
-        $histories = DB::table('rc_student_histories')
-            ->where('student_id', $student->id)
-            ->join('rc_videos', 'rc_student_histories.video_id', '=', 'rc_videos.id')
-            ->leftJoin('rc_subjects', 'rc_videos.subject_id', '=', 'rc_subjects.id')
-            ->select(
-                'rc_student_histories.*',
-                'rc_videos.id as video_id',
-                'rc_videos.title as video_title',
-                'rc_videos.description as video_description',
-                'rc_subjects.name as subject_name'
-            )
-            ->orderBy('rc_videos.created_at', 'desc')
-            ->get();
+        $watchedVideos = Student::with('histories')->where('id', $student->id)
+            ->whereHas('histories', function ($query) {
+                $query->where('watched', true);
+            })->count();
+        
+        $examSubmitted = Student::with('histories')->where('id', $student->id)
+            ->whereHas('histories', function ($query) {
+                $query->where('form_completed', true);
+            })->count();
 
-        $totalWatched = $histories->where('watched', 1)->count();
-        $totalCompletedForms = $histories->where('form_completed', 1)->count();
-        
-        if ($selectedSubject && $selectedSubject !== 'all') {
-            $query->where('subject_id', $selectedSubject);
-        }
-        
-        $videos = $query->orderByDesc('created_at')->paginate(9);
-        
-        return view('student.pages.dashboard', compact('videos', 'subjects', 'selectedSubject','totalWatched','totalCompletedForms'));
+            
+
+        // $currentProgres = $totalVideos > 0 ? round(($watchedVideos / $totalVideos) * 100, 2) : 0;
+        $progress = round(($watchedVideos / $totalVideos) * 100);
+        $exam_progress = round(($examSubmitted / $totalVideos) * 100);
+               
+        return view('student.pages.dashboard', compact('student','totalSubjects','totalVideos', 'progress', 'exam_progress') );
     }
 
     public function info()
