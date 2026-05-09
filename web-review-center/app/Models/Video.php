@@ -8,6 +8,12 @@ class Video extends Model
 {
     protected $table = 'rc_videos';
 
+    const STATUS = [
+        'DRAFT' => 'Draft',
+        'PUBLISHED' => 'Published',
+        'REVIEW' => 'Under Review',
+    ];
+
     protected $fillable = [
         'user_id',
         'title',

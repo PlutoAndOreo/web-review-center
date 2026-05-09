@@ -27,14 +27,15 @@ class RegistrationController extends Controller
         $fullPhone = $areaCode . $phoneNumber;
 
         $student = Student::create([
-            'first_name' => $validated['first_name'],
-            'last_name'  => $validated['last_name'],
-            'email'      => $validated['email'],
-            'phone'      => $fullPhone, // Store with area code
-            'address'    => $validated['address'] ?? null,
-            'school_graduated' => $validated['school_graduated'] ?? null,
-            'graduation_year' => $validated['graduation_year'] ?? null,
-            'password'   => Hash::make($validated['password']),
+            'first_name'        => $validated['first_name'],
+            'last_name'         => $validated['last_name'],
+            'email'             => $validated['email'],
+            'phone'             => $fullPhone, 
+            'address'           => $validated['address'] ?? null,
+            'school_graduated'  => $validated['school_graduated'] ?? null,
+            'graduation_year'   => $validated['graduation_year'] ?? null,
+            'password'          => bcrypt($validated['password']),
+            'type'              => 1,
         ]);
 
         auth()->guard('student')->login($student);

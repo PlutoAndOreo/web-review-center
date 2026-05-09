@@ -54,12 +54,111 @@ class StudentVideoController extends Controller
             'video_title' => $video->title,
         ]);
     }
-    /**
-     * Serve HLS playlist file (.m3u8)
-     * Simple HLS streaming: Rewrite segment URLs to absolute paths
-     */
-    public function hlsPlaylist($id)
-    {
+
+    // public function stream(Request $request, $id)
+    // {
+    //     // Lookup the processed/streamable path from DB by id
+    //     $video = \App\Models\Video::findOrFail($id);
+    //     $path = storage_path('app/private/' . ltrim($video->file_path, '/'));
+
+    //     $start = intval($request->query('start', 0));
+    //     $end   = intval($request->query('end', $start + 1024 * 1024));
+
+    //     $size = filesize($path);
+    //     if ($end >= $size) $end = $size - 1;
+    //     $length = $end - $start + 1;
+
+    //     $headers = [
+    //         'Content-Type' => 'video/mp4',
+    //         'Accept-Ranges' => 'bytes',
+    //         'Content-Range' => "bytes $start-$end/$size",
+    //         'Content-Length' => $length
+    //     ];
+
+    //     $stream = function() use ($path, $start, $length) {
+    //         $handle = fopen($path, 'rb');
+    //         fseek($handle, $start);
+    //         echo fread($handle, $length);
+    //         fclose($handle);
+    //     };
+
+    //     return response()->stream($stream, 206, $headers);
+    // }
+    // public function stream(Request $request, $id)
+    // {
+    //     $video = \App\Models\Video::findOrFail($id);
+
+    //     if (!is_null($video->file_path)) {
+    //         $path = storage_path('app/private/' . ltrim($video->file_path, '/'));
+    //     } else {
+    //         return response()->json(['error' => 'File path is null'], 404);
+    //     }
+
+    //     if (!file_exists($path)) {
+    //         return response()->json(['error' => 'File not found'], 404);
+    //     }
+
+    //     $size = filesize($path);
+    //     $rangeHeader = $request->header('Range');
+
+    //     if ($rangeHeader) {
+    //         if (!preg_match('/bytes=(\d*)-(\d*)/', $rangeHeader, $matches)) {
+    //             return response('', 416, ['Content-Range' => "bytes */{$size}"]);
+    //         }
+
+    //         $start = $matches[1] === '' ? 0 : intval($matches[1]);
+    //         $end = $matches[2] === '' ? ($size - 1) : intval($matches[2]);
+    //         if ($end >= $size) {
+    //             $end = $size - 1;
+    //         }
+    //         if ($start > $end || $start >= $size) {
+    //             return response('', 416, ['Content-Range' => "bytes */{$size}"]);
+    //         }
+
+    //         $length = $end - $start + 1;
+    //         $headers = [
+    //             'Content-Type' => 'video/mp4',
+    //             'Accept-Ranges' => 'bytes',
+    //             'Content-Range' => "bytes {$start}-{$end}/{$size}",
+    //             'Content-Length' => $length,
+    //             'Cache-Control' => 'no-cache'
+    //         ];
+
+    //         $stream = function () use ($path, $start, $length) {
+    //             $handle = fopen($path, 'rb');
+    //             fseek($handle, $start);
+    //             $bufferSize = 1024 * 1024;
+    //             $bytesLeft = $length;
+    //             while ($bytesLeft > 0 && !feof($handle)) {
+    //                 $readLength = ($bytesLeft > $bufferSize) ? $bufferSize : $bytesLeft;
+    //                 echo fread($handle, $readLength);
+    //                 flush();
+    //                 $bytesLeft -= $readLength;
+    //             }
+    //             fclose($handle);
+    //         };
+
+    //         return response()->stream($stream, 206, $headers);
+    //     } else {
+    //         $headers = [
+    //             'Content-Type' => 'video/mp4',
+    //             'Content-Length' => $size,
+    //             'Accept-Ranges' => 'bytes',
+    //             'Cache-Control' => 'no-cache'
+    //         ];
+    //         $stream = function () use ($path) {
+    //             $handle = fopen($path, 'rb');
+    //             while (!feof($handle)) {
+    //                 echo fread($handle, 1024 * 1024);
+    //                 flush();
+    //             }
+    //             fclose($handle);
+    //         };
+    //         return response()->stream($stream, 200, $headers);
+    //     }
+    // }
+
+    public function stream ($id) {
         $video = Video::findOrFail($id);
 
         if (!$video->file_path || !Storage::disk('private')->exists($video->file_path)) {
@@ -151,6 +250,14 @@ class StudentVideoController extends Controller
         }
     }
 
+    private function getMime($path)
+    {
+        return str_ends_with($path, '.m3u8')
+            ? 'application/vnd.apple.mpegurl'
+            : 'video/mp2t';
+    }
+
+
     public function getVideoFileSize($id) {
         
         $video = \App\Models\Video::findOrFail($id);
@@ -234,29 +341,18 @@ class StudentVideoController extends Controller
 
     //     return response()->stream($stream, 206, $headers);
     // }
-    public function list()
-    {
+
+    public function list() {
         $student = auth()->guard('student')->user();
 
-        $subjects = Subject::where('is_active', true)->get();
         
-        $query = Video::where('status','=','Published')->with('subject');
+        $videos = Video::with('subject')
+            ->where('status', 'published')
+            ->orderBy('subject_id')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('subject_id');
 
-        $histories = DB::table('rc_student_histories')
-            ->where('student_id', $student->id)
-            ->join('rc_videos', 'rc_student_histories.video_id', '=', 'rc_videos.id')
-            ->leftJoin('rc_subjects', 'rc_videos.subject_id', '=', 'rc_subjects.id')
-            ->select(
-                'rc_student_histories.*',
-                'rc_videos.id as video_id',
-                'rc_videos.title as video_title',
-                'rc_videos.description as video_description',
-                'rc_subjects.name as subject_name'
-            )
-            ->orderBy('rc_videos.created_at', 'desc')
-            ->get();
-        $videos = $query->orderByDesc('created_at')->paginate(9);
-
-        return view('student.pages.videos', compact('subjects','videos'));
+        return view('student.videos.list', compact('student', 'videos'));
     }
 }

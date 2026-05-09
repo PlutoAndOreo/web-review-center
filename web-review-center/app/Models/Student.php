@@ -22,6 +22,7 @@ class Student extends Authenticatable
         'school_graduated',
         'graduation_year',
         'is_active',
+        'type'
     ];
 
     protected $hidden = [
@@ -32,5 +33,10 @@ class Student extends Authenticatable
     public function comments()
     {
         return $this->hasMany(Comment::class);
+    }
+
+    public function histories()
+    {
+        return $this->hasMany(StudentHistory::class, 'student_id');
     }
 }
