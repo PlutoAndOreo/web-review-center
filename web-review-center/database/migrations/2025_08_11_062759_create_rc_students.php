@@ -20,6 +20,12 @@ return new class extends Migration
             $table->date('birthdate')->nullable();
             $table->string('gender')->nullable();
             $table->string('course')->nullable();
+            $table->boolean('type')->default(false)->comment('0 for f2f students, 1 for online student');
+            $table->string('address')->nullable();
+            $table->string('school_graduated')->nullable();
+            $table->string('password');
+            $table->year('graduation_year')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

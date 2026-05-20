@@ -1,720 +1,240 @@
 @extends('student.layouts.app')
 
-@push('styles')
-    @vite('resources/css/student/comments.css')
-    <!-- AdminLTE CSS -->
-    <link rel="stylesheet" href="{{ asset('vendor/adminlte/dist/css/adminlte.min.css') }}">
-    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :fullscreen #videoContainer {
-            background-color: black;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        #videoContainer {
-            position: relative;
-            width: 100%;
-            background: #000;
-        }
-        
-        #videoPlayer {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        
-        /* Hide progress bar to prevent seeking/forwarding */
-        #videoPlayer::-webkit-media-controls-timeline,
-        #videoPlayer::-webkit-media-controls-current-time-display,
-        #videoPlayer::-webkit-media-controls-time-remaining-display {
-            display: none !important;
-        }
-        
-        /* Hide progress bar for Firefox */
-        #videoPlayer::-moz-media-controls-timeline {
-            display: none !important;
-        }
-        
-        /* Hide progress bar and time displays */
-        video::-webkit-media-controls-panel {
-            display: flex !important;
-            -webkit-justify-content: flex-end;
-        }
-        
-        /* Additional CSS to hide progress bar */
-        #videoPlayer::--webkit-media-controls-timeline {
-            display: none !important;
-        }
-        
-        /* Prevent seeking by hiding the progress bar */
-        .video-controls-container {
-            position: relative;
-        }
-        
-        /* Hide native video controls progress bar */
-        video::-webkit-media-controls-timeline-container,
-        video::-webkit-media-controls-timeline {
-            display: none !important;
-        }
-        
-        @media (max-width: 768px) {
-            .video-controls {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            
-            .video-controls button {
-                margin: 5px;
-            }
-            
-            .card-footer .row {
-                flex-direction: column;
-            }
-            
-            .card-footer .col-md-4 {
-                width: 100%;
-                margin-top: 10px;
-            }
-            
-            .card-footer .col-md-8 {
-                width: 100%;
-            }
-            
-            .embed-responsive {
-                min-height: 400px;
-            }
-        }
-        
-        @media (max-width: 576px) {
-            .content-header h1 {
-                font-size: 1.5rem;
-            }
-            
-            .breadcrumb {
-                font-size: 0.875rem;
-            }
-        }
-    </style>
-@endpush
+@section('title', 'Videos')
 
 @section('content')
-<div class="content-wrapper">
-    <!-- Content Header -->
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>{{ $video_title }}</h1>
-                </div>
-                
-            </div>
+  <div
+      class="max-w-5xl mx-auto bg-white p-6 rounded-xl shadow"
+      x-data="{ progress: 0, completed: false, showExam: false }">
+
+      <!--  HEADER -->
+      <div class="flex items-center justify-between mb-4">
+
+          <!-- Back Button -->
+          <a href="{{ route('student.videos.list') }}"
+            class="text-green-600 font-medium hover:underline">
+              ← Back
+          </a>
+
+          <!-- Subject -->
+          <span class="text-sm text-gray-500">
+              {{ $video->subject->name ?? 'Subject' }}
+          </span>
+
+      </div>
+
+      <!--  TITLE -->
+      <h1 class="text-2xl font-bold text-gray-900 mb-6">
+          {{ $video->title }}
+      </h1>
+
+      <!--  VIDEO -->
+      <div
+          x-data="videoPlayer('{{ route('stream.video', $video->id) }}')"
+          x-init="init()"
+          class="bg-black rounded-lg overflow-hidden mb-6">
+          
+          <video
+              x-ref="video"
+              class="w-full h-[400px]"
+              @timeupdate="
+                  let v = $event.target;
+
+                  if (v.duration) {
+                      progress = Math.floor((v.currentTime / v.duration) * 100);
+                  }
+
+                  if (progress >= 90) {
+                      completed = true;
+                  }
+              "
+              {{ $video->url }}
+          </video>
+
+<button
+        @click="toggle()"
+        class="absolute inset-0 flex items-center justify-center"
+    >
+
+        <div class="bg-white/80 rounded-full p-4 shadow-lg transition transform hover:scale-110">
+
+            <!-- PLAY ICON -->
+            <svg x-show="!playing"
+                 xmlns="http://www.w3.org/2000/svg"
+                 class="w-8 h-8 text-black"
+                 fill="currentColor"
+                 viewBox="0 0 24 24">
+                <path d="M5 3v18l15-9L5 3Z"/>
+            </svg>
+
+            <!-- PAUSE ICON -->
+            <svg x-show="playing"
+                 xmlns="http://www.w3.org/2000/svg"
+                 class="w-8 h-8 text-black"
+                 fill="currentColor"
+                 viewBox="0 0 24 24">
+                <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
+            </svg>
+
         </div>
-    </section>
 
-    <!-- Main content -->
-    <section class="content">
-        <div class="container-fluid">
-            <div class="row ">
-                <div class="col-12 col-lg-10 col-xl-8">
-                    <!-- Video Player Card -->
-                    <div class="card card-primary card-outline">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-play-circle mr-1"></i>
-                                Video Player
-                            </h3>
-                            <div class="card-tools">
-                                <a href="{{ route('student.videos.list') }}" class="btn btn-sm btn-default">
-                                    <i class="fas fa-arrow-left"></i> Back
-                                </a>
-                            </div>
-                        </div>
-                        <div class="card-body p-0">
-                            <div id="videoContainer" class="w-100">
-                                <video id="videoPlayer" class="w-100" controlsList="nodownload noremoteplayback" preload="metadata"
-                                    oncontextmenu="return false"
-                                    controls
-                                    disablePictureInPicture
-                                    disableRemotePlayback></video>
-                            </div>
-                        </div>
-                    </div>
+    </button>
 
-                    <!-- Google Forms Section -->
-                    @if($showForm && $formUrl)
-                        <div class="card card-success card-outline" id="googleFormSection">
-                            <div class="card-header bg-danger">
-                                <h3 class="card-title">
-                                    <i class="fas fa-clipboard-list mr-1"></i>
-                                    Complete Your Review
-                                </h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="alert alert-info">
-                                    <i class="icon fas fa-info-circle"></i>
-                                    @if($retakeAllowed && $isCompleted)
-                                        <strong>Retake:</strong> Please complete the form again.
-                                    @else
-                                        Please complete the form below after watching the video.
-                                    @endif
-                                </div>
-                                <div class="embed-responsive embed-responsive-16by9">
-                                    <iframe 
-                                        id="googleFormIframe"
-                                        src="{{ $formUrl }}" 
-                                        class="embed-responsive-item"
-                                        frameborder="0">Loading ...</iframe>
-                                </div>
-                            </div>
-                            <div class="card-footer">
-                                <div class="row">
-                                    <div class="col-12 col-md-8">
-                                        <p class="text-muted mb-0">
-                                            <small>After submitting the form, click the button below to mark as complete.</small>
-                                        </p>
-                                    </div>
-                                    <div class="col-12 col-md-4 text-right">
-                                        <button id="markCompleteBtn" class="btn btn-danger btn-block">
-                                            <i class="fas fa-check-circle mr-1"></i>
-                                            Mark as Complete
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    @elseif($isCompleted && !$showForm && $formUrl)
-                        <div class="card card-success" id="completedSection">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-check-circle mr-1"></i>
-                                    Review Completed
-                                </h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="alert alert-success mb-0">
-                                    <i class="icon fas fa-check"></i>
-                                    You have successfully completed this review. Thank you!
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-                    
-                    @if(!$formUrl)
-                        <div class="card card-warning">
-                            <div class="card-body">
-                                <div class="alert alert-warning mb-0">
-                                    <i class="icon fas fa-exclamation-triangle"></i>
-                                    No form available for this video.
-                                </div>
-                            </div>
-                        </div>
-                    @endif
 
-                    <!-- Comments Section -->
-                    <div class="card card-primary card-outline">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-comments mr-1"></i>
-                                Comments
-                            </h3>
-                        </div>
-                        <div class="card-body">
-                            <!-- Comment Form -->
-                            <form id="commentForm" class="mb-4">
-                                @csrf
-                                <div class="form-group">
-                                    <label for="commentContent">Share your thoughts about this video</label>
-                                    <textarea 
-                                        id="commentContent" 
-                                        name="content" 
-                                        class="form-control" 
-                                        rows="3"
-                                        placeholder="Write your comment here..."></textarea>
-                                </div>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-paper-plane mr-1"></i>
-                                    Post Comment
-                                </button>
-                            </form>
+      </div>
 
-                            <hr>
+      <button 
+          @click="showExam = !showExam"
+          class="w-full mb-6 py-3 rounded-lg font-semibold transition
+                bg-green-600 text-white hover:bg-green-700
+                disabled:bg-gray-300 disabled:cursor-not-allowed">
+          <span x-text="showExam ? 'Hide Exam' : 'Take Exam'"></span> 
+      </button>
+      <!--  GOOGLE FORM (ALPINE CONTROLLED) -->
+      <div x-show="showExam" x-transition class="border-t pt-6">
 
-                            <!-- Comments List -->
-                            <div id="commentsList">
-                                <div class="text-center text-muted py-3">
-                                    <i class="fas fa-spinner fa-spin"></i> Loading comments...
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-</div>
+          <h2 class="text-lg font-semibold mb-4 text-gray-900">
+              Exam
+          </h2>
 
-    @push('js')
-        <!-- AdminLTE JS -->
-        <script src="{{ asset('vendor/adminlte/dist/js/adminlte.min.js') }}"></script>
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <!-- HLS.js for HLS video streaming -->
-        <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-        <script>
-            // Add null checks for all DOM elements
-            const video = document.getElementById('videoPlayer');
-            const playPauseBtn = document.getElementById('playPauseBtn');
-            const playIcon = document.getElementById('playIcon');
-            const pauseIcon = document.getElementById('pauseIcon');
-            const fullscreenBtn = document.getElementById('fullscreenBtn');
-            const fsEnterIcon = document.getElementById('fsEnterIcon');
-            const fsExitIcon = document.getElementById('fsExitIcon');
-            const rollbackBtn = document.getElementById('rollbackBtn');
-            const videoContainer = document.getElementById('videoContainer');
-            var videoId = "{{ $videoId }}";
-            
-            // Check if video element exists
-            if (!video) {
-                console.error('Video player element not found');
-            }
-            
-            /**
-             * Simple HLS Video Streaming Implementation
-             * 
-             * How it works:
-             * 1. FFmpeg converts video to HLS format (10-second segments)
-             * 2. Server serves playlist.m3u8 file
-             * 3. Player requests segments on-demand (chunked loading)
-             * 4. HLS.js handles playback for non-native browsers
-             */
-            
-            const hlsPlaylistUrl = "{{ url('/student/video-hls/' . $videoId . '/playlist.m3u8') }}";
-            let hls = null;
-            
-            // Prevent AdminLTE from initializing IFrame widget on Google Form iframe
-            // Run immediately to prevent AdminLTE auto-initialization
-            (function() {
-                // Remove data-widget attribute from Google Form iframe immediately
-                const googleFormIframe = document.getElementById('googleFormIframe');
-                if (googleFormIframe) {
-                    googleFormIframe.removeAttribute('data-widget');
-                }
-                
-                // Also prevent AdminLTE from auto-initializing on this iframe
-                if (typeof $ !== 'undefined' && $.fn.IFrame) {
-                    $(document).ready(function() {
-                        if (googleFormIframe) {
-                            $(googleFormIframe).removeAttr('data-widget');
-                            $(googleFormIframe).removeData('IFrame');
-                        }
-                    });
-                }
-            })();
-            
-            // Initialize HLS streaming
-            if (video && typeof Hls !== 'undefined' && Hls.isSupported()) {
-                // HLS.js for Chrome, Firefox, Edge (browsers without native HLS)
-                hls = new Hls({
-                    enableWorker: true,
-                    lowLatencyMode: false,
-                    backBufferLength: 90
-                });
-                
-                hls.loadSource(hlsPlaylistUrl);
-                hls.attachMedia(video);
-                
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    console.log('HLS video ready to play');
-                });
-                
-                hls.on(Hls.Events.ERROR, function(event, data) {
-                    if (data.fatal) {
-                        switch(data.type) {
-                            case Hls.ErrorTypes.NETWORK_ERROR:
-                                console.log('Network error, retrying...');
-                                hls.startLoad();
-                                break;
-                            case Hls.ErrorTypes.MEDIA_ERROR:
-                                console.log('Media error, recovering...');
-                                hls.recoverMediaError();
-                                break;
-                            default:
-                                console.error('Fatal HLS error');
-                                hls.destroy();
-                                break;
-                        }
-                    }
-                });
-            } else if (video && video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Native HLS support (Safari, iOS)
-                video.src = hlsPlaylistUrl;
-            } else {
-                console.error('HLS not supported');
-                if (video) {
-                    video.innerHTML = '<p>Your browser does not support HLS video streaming.</p>';
-                }
-            }
-            
-            // Prevent seeking/forwarding by hiding progress bar and blocking seek attempts
-            if (video) {
-                video.addEventListener('loadedmetadata', function() {
-                    // Hide progress bar elements using CSS
-                    const style = document.createElement('style');
-                    style.textContent = `
-                        video::-webkit-media-controls-timeline,
-                        video::-webkit-media-controls-current-time-display,
-                        video::-webkit-media-controls-time-remaining-display,
-                        video::-webkit-media-controls-timeline-container {
-                            display: none !important;
-                        }
-                        video::-moz-media-controls-timeline {
-                            display: none !important;
-                        }
-                    `;
-                    document.head.appendChild(style);
-                });
-                
-                // Prevent seeking by intercepting seek attempts
-                let lastTime = 0;
-                let isUserSeeking = false;
-                
-                video.addEventListener('timeupdate', function() {
-                    if (!isUserSeeking) {
-                        const currentTime = video.currentTime;
-                        // If time jumps forward more than 2 seconds (user trying to seek), reset to last valid position
-                        if (currentTime > lastTime + 2) {
-                            video.currentTime = lastTime;
-                        } else {
-                            lastTime = currentTime;
-                        }
-                    }
-                });
-                
-                // Prevent seeking via seeking event
-                video.addEventListener('seeking', function(e) {
-                    if (video.currentTime > lastTime + 1) {
-                        e.preventDefault();
-                        video.currentTime = lastTime;
-                    }
-                });
-                
-                video.addEventListener('seeked', function() {
-                    if (video.currentTime > lastTime + 1) {
-                        video.currentTime = lastTime;
-                    } else {
-                        lastTime = video.currentTime;
-                    }
-                    isUserSeeking = false;
-                });
-                
-                // Prevent seeking via keyboard
-                video.addEventListener('keydown', function(e) {
-                    // Prevent arrow keys from seeking
-                    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }
-                });
-                
-                // Disable right-click context menu on video
-                video.addEventListener('contextmenu', function(e) {
-                    e.preventDefault();
-                    return false;
-                });
+          <div class="w-full overflow-hidden rounded-lg border">
 
-                video.addEventListener('play', () => {
-                    if (playIcon) playIcon.classList.add('d-none');
-                    if (pauseIcon) pauseIcon.classList.remove('d-none');
-                });
+              <iframe
+                  src="{{ $video->google_form_link }}"
+                  class="w-full h-[700px]"
+                  frameborder="0"
+              >
+                  Loading…
+              </iframe>
 
-                video.addEventListener('pause', () => {
-                    if (playIcon) playIcon.classList.remove('d-none');
-                    if (pauseIcon) pauseIcon.classList.add('d-none');
-                });
+          </div>
+          <button
+              type="submit"
+              class="w-full bg-green-600 text-white py-3 rounded-lg
+                    font-semibold hover:bg-green-700 transition
+                    focus:outline-none focus:ring-2 focus:ring-green-300">
+              Submit
+          </button>
+      </div>
 
-                video.addEventListener('ended', () => {
-                    // Show and scroll to form section if it exists
-                    const formSection = document.getElementById('googleFormSection');
-                    if (formSection) {
-                        // Show form section if it was hidden
-                        formSection.classList.remove('hidden');
-                        formSection.style.display = 'block';
-                        // Scroll to form section
+      <div class="mt-10 border-t pt-6">
+
+    <!--  Header -->
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">
+        Comments
+    </h2>
+
+    <!--  Comment Form -->
+    <div x-data="{ comment: '', loading: false }" class="mb-6">
+
+        <textarea
+            x-model="comment"
+            rows="3"
+            placeholder="Write your comment..."
+            class="w-full px-4 py-2 border rounded-lg
+                   focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-400"
+        ></textarea>
+
+        <!-- Actions -->
+        <div class="flex justify-between items-center mt-2">
+
+            <span class="text-sm text-gray-400">
+                Share your thoughts about this lesson
+            </span>
+
+            <button
+                @click="
+                    if(comment.trim() !== '') {
+                        loading = true;
+
+                        // simulate submit
                         setTimeout(() => {
-                            formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            // Highlight the form section briefly
-                            formSection.style.transition = 'box-shadow 0.3s';
-                            formSection.style.boxShadow = '0 0 20px rgba(34, 197, 94, 0.5)';
-                            setTimeout(() => {
-                                formSection.style.boxShadow = '';
-                            }, 2000);
-                        }, 100);
+                            comments.push({
+                                text: comment,
+                                user: '{{ auth()->user()->first_name ?? 'You' }}'
+                            });
+                            comment = '';
+                            loading = false;
+                        }, 500);
                     }
-                });
+                "
+                :disabled="loading"
+                class="bg-green-600 text-white px-4 py-2 rounded-lg
+                       hover:bg-green-700 transition
+                       disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+                <span x-show="!loading">Post</span>
+                <span x-show="loading">Posting...</span>
+            </button>
 
-                video.addEventListener('timeupdate', () => {
-                    if (video.duration && (video.duration - video.currentTime < 1)) {
-                        console.log("Approaching end of video...");
-                    }
-                });
-            } // End of if (video) block
+        </div>
+    </div>
 
-            // Mark as complete
-            const markCompleteBtn = document.getElementById('markCompleteBtn');
-            if (markCompleteBtn) {
-                markCompleteBtn.addEventListener('click', async () => {
-                    // Confirm before marking as complete
-                    if (!confirm('Have you submitted the Google Form? Click OK to mark this review as complete.')) {
-                        return;
-                    }
+    <!--  Comment List -->
+    <div x-data="{ comments: [] }" class="space-y-4">
 
-                    try {
-                        const response = await fetch(`/student/videos/${videoId}/complete`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                                    .getAttribute('content')
-                            }
-                        });
+        <!-- Empty State -->
+        <p x-show="comments.length === 0" class="text-sm text-gray-500">
+            No comments yet. Be the first to comment.
+        </p>
 
-                        const result = await response.json();
-                        if (result.success) {
-                            // Hide form section and show completion message
-                            const formSection = document.getElementById('googleFormSection');
-                            if (formSection) {
-                                formSection.style.display = 'none';
-                            }
-                            
-                            // Show completion message
-                            const completedHtml = `
-                                <div class="card card-success" id="completedSection">
-                                    <div class="card-header">
-                                        <h3 class="card-title">
-                                            <i class="fas fa-check-circle mr-1"></i>
-                                            Review Completed
-                                        </h3>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="alert alert-success mb-0">
-                                            <i class="icon fas fa-check"></i>
-                                            Thank you for completing the review!
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                            
-                            // Insert completion message before comments section
-                            const commentsSection = document.querySelector('.comments-section');
-                            if (commentsSection && commentsSection.parentNode) {
-                                commentsSection.parentNode.insertAdjacentHTML('beforebegin', completedHtml);
-                            }
-                            
-                            // Scroll to completion message
-                            const completedSection = document.getElementById('completedSection');
-                            if (completedSection) {
-                                completedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }
-                        } else {
-                            alert('Failed to mark as complete. Please try again.');
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        alert('Failed to mark as complete. Please try again.');
-                    }
-                });
+        <!-- Loop Comments -->
+        <template x-for="(item, index) in comments" :key="index">
+            <div class="bg-gray-50 p-4 rounded-lg border">
+
+                <div class="flex items-center justify-between">
+
+                    <p class="font-semibold text-sm text-gray-900"
+                       x-text="item.user">
+                    </p>
+
+                    <span class="text-xs text-gray-400">
+                        Just now
+                    </span>
+
+                </div>
+
+                <p class="text-gray-700 mt-2" x-text="item.text"></p>
+
+            </div>
+        </template>
+
+    </div>
+
+  </div>
+@endsection
+@push('js')
+<script>
+
+function videoPlayer(url) {
+    return {
+        playing: false,
+        progress: 0,
+        completed: false,
+
+        init() {
+            const video = this.$refs.video;
+
+            // ✅ HLS support
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
             }
 
-            // Fullscreen toggle
-            if (fullscreenBtn) {
-                fullscreenBtn.addEventListener('click', () => {
-                    if (!document.fullscreenElement) {
-                        if (videoContainer && videoContainer.requestFullscreen) {
-                            videoContainer.requestFullscreen();
-                        }
-                    } else {
-                        if (document.exitFullscreen) {
-                            document.exitFullscreen();
-                        }
-                    }
-                });
-            }
+            // ✅ Sync state
+            video.addEventListener('play', () => this.playing = true);
+            video.addEventListener('pause', () => this.playing = false);
+        },
 
-            // Rollback/Exit Fullscreen button
-            if (rollbackBtn) {
-                rollbackBtn.addEventListener('click', () => {
-                    if (document.fullscreenElement && document.exitFullscreen) {
-                        document.exitFullscreen();
-                    }
-                });
-            }
+        toggle() {
+            const video = this.$refs.video;
+            video.paused ? video.play() : video.pause();
+        }
+    }
+}
 
-            // Listen for fullscreen change to update icons and rollback button
-            document.addEventListener('fullscreenchange', () => {
-                const isFullscreen = !!document.fullscreenElement;
+</script>
 
-                if (isFullscreen) {
-                    if (fsEnterIcon) fsEnterIcon.classList.add('d-none');
-                    if (fsExitIcon) fsExitIcon.classList.remove('d-none');
-                    if (rollbackBtn) rollbackBtn.classList.remove('d-none');
-
-                    if (videoContainer) {
-                        videoContainer.style.width = '100vw';
-                        videoContainer.style.height = '100vh';
-                        videoContainer.style.borderRadius = '0';
-                    }
-                    if (video) {
-                        video.style.height = '100%';
-                        video.style.objectFit = 'contain';
-                    }
-                } else {
-                    if (fsEnterIcon) fsEnterIcon.classList.remove('d-none');
-                    if (fsExitIcon) fsExitIcon.classList.add('d-none');
-                    if (rollbackBtn) rollbackBtn.classList.add('d-none');
-
-                    // Unlock orientation when exiting
-                    if (screen.orientation && screen.orientation.unlock) {
-                        screen.orientation.unlock();
-                    }
-
-                    // Restore layout
-                    if (videoContainer) {
-                        videoContainer.style.width = '';
-                        videoContainer.style.height = '';
-                        videoContainer.style.borderRadius = '';
-                    }
-                    if (video) {
-                        video.style.height = '';
-                    }
-                }
-
-                // Sync play/pause icons
-                if (video && video.paused) {
-                    if (playIcon) playIcon.classList.remove('d-none');
-                    if (pauseIcon) pauseIcon.classList.add('d-none');
-                } else if (video) {
-                    if (playIcon) playIcon.classList.add('d-none');
-                    if (pauseIcon) pauseIcon.classList.remove('d-none');
-                }
-            });
-
-            // Comments functionality
-            const commentForm = document.getElementById('commentForm');
-            const commentContent = document.getElementById('commentContent');
-            const commentsList = document.getElementById('commentsList');
-
-            // Load comments on page load
-            if (typeof loadComments === 'function') {
-                loadComments();
-            }
-
-            // Handle comment form submission
-            if (commentForm) {
-                commentForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-
-                const content = commentContent.value.trim();
-                if (!content) return;
-
-                try {
-                    const response = await fetch(`/student/videos/${videoId}/comments`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                                .getAttribute('content')
-                        },
-                        body: JSON.stringify({
-                            content: content
-                        })
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        commentContent.value = '';
-                        loadComments(); // Reload comments
-                    } else {
-                        alert('Failed to post comment. Please try again.');
-                    }
-                } catch (error) {
-                    console.error('Error posting comment:', error);
-                    alert('Failed to post comment. Please try again.');
-                }
-            });
-            } // End of commentForm null check
-
-            // Load comments function
-            async function loadComments() {
-                try {
-                    const response = await fetch(`/student/videos/${videoId}/comments`);
-                    const result = await response.json();
-                    commentsList.innerHTML = '';
-
-                    if (result.comments && result.comments.length > 0) {
-                        result.comments.forEach(comment => {
-                            const commentElement = document.createElement('div');
-                            commentElement.className = 'comment-item';
-
-                            let adminReplyHTML = '';
-                            if (comment.admin_reply) {
-                                adminReplyHTML = `
-                            <div class="card card-info card-outline mt-3">
-                                <div class="card-header">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="comment-reply-author font-weight-bold">
-                                            <i class="fas fa-user-shield mr-1"></i>
-                                            ${escapeHtml(comment.admin_name || 'Admin')}
-                                        </div>
-                                        <div class="comment-reply-date text-muted small">${comment.admin_replied_at}</div>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="comment-reply-content">${escapeHtml(comment.admin_reply)}</div>
-                                </div>
-                            </div>
-                        `;
-                            }
-
-                            commentElement.className = 'card card-outline mb-3';
-                            commentElement.innerHTML = `
-                        <div class="card-header">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="comment-author font-weight-bold">${escapeHtml(comment.student_name)}</div>
-                                <div class="comment-date text-muted small">${comment.created_at}</div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="comment-content">${escapeHtml(comment.content)}</div>
-                            ${adminReplyHTML}
-                        </div>
-                    `;
-                            commentsList.appendChild(commentElement);
-                        });
-                    } else {
-                        commentsList.innerHTML =
-                            '<div class="alert alert-info text-center"><i class="fas fa-info-circle mr-1"></i>No comments yet. Be the first to comment!</div>';
-                    }
-                } catch (error) {
-                    console.error('Error loading comments:', error);
-                    commentsList.innerHTML =
-                        '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle mr-1"></i>Failed to load comments. Please try again.</div>';
-                }
-            }
-
-            function escapeHtml(text) {
-                const map = {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#039;'
-                };
-                return text.replace(/[&<>"']/g, m => map[m]);
-            }
-
-        </script>
-    @endpush
-    @endsection

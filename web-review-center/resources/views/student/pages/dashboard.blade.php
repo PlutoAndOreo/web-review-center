@@ -9,7 +9,7 @@
                 Welcome back, {{ $student->first_name }} 
             </h1>
             <p class="text-gray-600">
-                Access your courses, track your progress, and manage your profile.
+                Access your subjects, track your progress, and manage your profile.
             </p>
         </div>
     </div>
@@ -45,7 +45,6 @@
         </div>
 
         <!--- Quizzes -->
-
         <div
             class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition"
             x-data="{ exam_progress: {{ $exam_progress ?? 0 }} }"
