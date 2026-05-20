@@ -1,66 +1,64 @@
 services:
   nginx:
-    build:
+    build: 
       context: ./infra/nginx
-  
-    container_name: rc-backend
+      dockerfile: Dockerfile.local
+    container_name: rc-nginx-local
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"   
     volumes:
       - ./web-review-center:/srv/app
-      - /etc/letsencrypt:/etc/letsencrypt
+      - ./infra/nginx/default.local.conf:/etc/nginx/conf.d/default.conf  
     depends_on:
       - php
 
   php:
-    build:
+    build: 
       context: ./infra/php
-    container_name: rc-php
-    expose:
-      - "9000" # replaced 9001 if there is conflict on this port.
+    container_name: rc-php-local
     ports:
-      - "8081:9000" # replaced 9001 if there is conflict on this port.
+      - "9000:9000"   
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
     volumes:
-      - ./web-review-center:/srv/app # replace project_name with your desired value
-    depends_on:
-      - mysql
+      - ./web-review-center:/srv/app
+    command: php-fpm
+
   mysql:
     build:
       context: ./infra/mysql
-    container_name: rc-db
-    platform: linux/x86_64
+    container_name: rc-db-local
     ports:
-      - "3307:3306"
+      - "3307:3306"   
     environment:
-      - "LANG=C.UTF-8"
-      - "MYSQL_ROOT_PASSWORD=root" 
-      - "MYSQL_DATABASE=PowerDev" 
-      - "MYSQL_PASSWORD=admin"
-      - "MYSQL_USER=admin"
+      LANG: C.UTF-8
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: PowerDev_local
+      MYSQL_USER: local
+      MYSQL_PASSWORD: local
     volumes:
-      - type: volume
-        source: mysql-volume
-        target: /var/lib/mysql
+      - mysql-volume:/var/lib/mysql
+
   queue-worker:
-    build:
+    build: 
       context: ./infra/php
-    container_name: rc-queue
-    command: ["php", "artisan", "queue:work", "database", "--queue=default", "--sleep=1", "--timeout=120", "--tries=3", "--memory=256"]
-    restart: always
+    container_name: rc-queue-local
+    command: >
+      php artisan queue:work database
+      --queue=default
+      --sleep=1
+      --timeout=120
+      --tries=3
     environment:
-      APP_ENV: "production"
+      APP_ENV: local
+      APP_DEBUG: "true"
     volumes:
       - ./web-review-center:/srv/app
     depends_on:
       - mysql
-    # Optional: if your php container sets working dir differently, add:
     working_dir: /srv/app
-
-networks:
-  default:
-    driver: bridge
 
 volumes:
   mysql-volume:
-    driver: local
+    driver: local 

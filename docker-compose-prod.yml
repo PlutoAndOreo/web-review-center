@@ -1,0 +1,72 @@
+version: '3.9'
+
+services:
+  nginx:
+    build:
+      context: ./infra/nginx
+    container_name: rc-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./web-review-center:/srv/app:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - php
+
+  php:
+    build:
+      context: ./infra/php
+    container_name: rc-php
+    restart: unless-stopped
+    expose:
+      - "9000"
+    volumes:
+      - ./web-review-center:/srv/app
+    depends_on:
+      - mysql
+
+  mysql:
+    build:
+      context: ./infra/mysql
+    container_name: rc-db
+    restart: unless-stopped
+    platform: linux/x86_64
+    environment:
+      LANG: C.UTF-8
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql-volume:/var/lib/mysql
+
+  queue-worker:
+    build:
+      context: ./infra/php
+    container_name: rc-queue
+    restart: unless-stopped
+    command: >
+      php artisan queue:work database 
+      --queue=default 
+      --sleep=1 
+      --timeout=120 
+      --tries=3 
+      --memory=256
+    environment:
+      APP_ENV: production
+    volumes:
+      - ./web-review-center:/srv/app
+    depends_on:
+      - mysql
+      - php
+    working_dir: /srv/app
+
+networks:
+  default:
+    driver: bridge
+
+volumes:
+  mysql-volume:
+    driver: local
