@@ -23,6 +23,10 @@ use App\Http\Controllers\Student\DashboardController as StudentDashboardControll
 use App\Http\Controllers\Student\StudentVideoController;
 use App\Http\Controllers\Student\CommentController;
 
+use App\Http\Controllers\StreamVideoController;
+
+    Route::get('/video-stream/{id}', [StreamVideoController::class, 'stream'])->where('path', '.*')->name('stream.video');
+
     Route::get('/', function () {
         return redirect()->route('student.login'); // route name for student login
     });
@@ -90,9 +94,8 @@ use App\Http\Controllers\Student\CommentController;
             Route::post('/bulk-delete', [NotificationController::class, 'bulkDelete'])->name('bulk-delete');
         });
     });
-
+    
 Route::get('admin/videos/progress/{token}', [VideoController::class, 'progress'])->name('admin.progress');
-
 
 // Student Auth & Dashboard
     Route::prefix('student')->name('student.')->group(function () {
@@ -111,8 +114,7 @@ Route::get('admin/videos/progress/{token}', [VideoController::class, 'progress']
         Route::get('/videos/list', [StudentVideoController::class, 'list'])->name('videos.list');
         Route::get('/videos/{id}', [StudentVideoController::class, 'index'])->whereNumber('id')->name('videos');
         Route::get('/video-hls/{id}/playlist.m3u8', [StudentVideoController::class, 'hlsPlaylist'])->name('video.hls.playlist');
-        Route::get('/video-hls/{id}/segment/{segment}', [StudentVideoController::class, 'hlsSegment'])->where('segment', '.*')->name('video.hls.segment');
-        Route::get('/video-stream/{id}', [StudentVideoController::class, 'stream'])->name('video.stream');
+        Route::get('/video-hls/{id}/segment/{segment}', [StreamVideoController::class, 'hlsSegment'])->where('segment', '.*')->name('video.hls.segment');
         Route::get('/videos/{id}/completion-status', [StudentVideoController::class, 'checkCompletionStatus'])->name('videos.completion-status');
         // Logout
         Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
@@ -127,8 +129,10 @@ Route::get('admin/videos/progress/{token}', [VideoController::class, 'progress']
 
     });
     
-Route::post('/auto-logout', function () {
-    \Auth::logout();
-    session()->flush();
-    return response()->json(['status' => 'logged_out']);
-})->name('auto.logout');
+    Route::post('/auto-logout', function () {
+        \Auth::logout();
+        session()->flush();
+        return response()->json(['status' => 'logged_out']);
+    })->name('auto.logout');
+    
+    

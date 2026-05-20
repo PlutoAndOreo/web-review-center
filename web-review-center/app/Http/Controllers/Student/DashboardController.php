@@ -36,9 +36,9 @@ class DashboardController extends Controller
             
 
         // $currentProgres = $totalVideos > 0 ? round(($watchedVideos / $totalVideos) * 100, 2) : 0;
-        $progress = round(($watchedVideos / $totalVideos) * 100);
-        $exam_progress = round(($examSubmitted / $totalVideos) * 100);
-               
+        $progress = $totalVideos > 0 ? round(($watchedVideos / $totalVideos) * 100) : 0;
+        $exam_progress = $totalVideos > 0 ? round(($examSubmitted / $totalVideos) * 100) : 0;
+                   
         return view('student.pages.dashboard', compact('student','totalSubjects','totalVideos', 'progress', 'exam_progress') );
     }
 
