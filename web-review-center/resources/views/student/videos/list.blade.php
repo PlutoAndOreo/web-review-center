@@ -8,7 +8,7 @@
 
     <div class="flex flex-col items-center justify-center py-20 text-center">
         <div class="text-5xl mb-4">
-            <img src="{{ asset('images/video.png') }}" alt="No Videos" class="w-32 h-32 mx-auto">
+            <img src="{{ asset('image/video.png') }}" alt="No Videos" class="w-32 h-32 mx-auto">
         </div>
 
         <h2 class="text-xl font-semibold text-gray-800">
@@ -115,6 +115,6 @@
     </div>
 
 
-<!-- @endif -->
+@endif
 
 @endsection

@@ -22,22 +22,22 @@
                 <!-- Title -->
                 <div class="form-group">
                     <label for="title">Title</label>
-                    <input 
-                        type="text" 
-                        class="form-control" 
-                        name="title" 
-                        id="title" 
-                        value="{{ old('title', $video->title) }}" 
+                    <input
+                        type="text"
+                        class="form-control"
+                        name="title"
+                        id="title"
+                        value="{{ old('title', $video->title) }}"
                         required>
                 </div>
 
                 <!-- Description -->
                 <div class="form-group">
                     <label for="description">Description</label>
-                    <textarea 
-                        class="form-control" 
-                        name="description" 
-                        id="description" 
+                    <textarea
+                        class="form-control"
+                        name="description"
+                        id="description"
                         rows="4">{{ old('description', $video->description) }}</textarea>
                 </div>
 
@@ -45,11 +45,11 @@
                 <div class="form-group">
                     <label for="video">Video (MP4 only)</label>
                     <div class="custom-file">
-                        <input 
-                            type="file" 
-                            class="custom-file-input" 
-                            name="video" 
-                            id="video" 
+                        <input
+                            type="file"
+                            class="custom-file-input"
+                            name="video"
+                            id="video"
                             accept="video/mp4">
                         <label class="custom-file-label" for="video">
                             Choose file
@@ -93,23 +93,23 @@
                 <!-- Google Form Link -->
                 <div class="form-group">
                     <label for="google_form_link">Google Form Link</label>
-                    <input 
-                        type="text" 
-                        class="form-control" 
-                        name="google_form_link" 
+                    <input
+                        type="text"
+                        class="form-control"
+                        name="google_form_link"
                         id="google_form_link"
                         value="{{ old('google_form_link', $video->google_form_link) }}">
                 </div>
 
                 <!-- Thumbnail Preview -->
-                @if(!empty($video->video_thumb))
+                {{-- @if(!empty($video->video_thumb))
                 <div class="form-group">
                     <label>Current Thumbnail</label>
                     <div>
-                        <img src="{{ Storage::url($video->video_thumb) }}" alt="Thumbnail" style="width: 160px; height: 90px; object-fit: cover; border-radius: 6px;" />
+                        <img src="{{ asset($video->video_thumb) }}" alt="Thumbnail" style="width: 160px; height: 90px; object-fit: cover; border-radius: 6px;" />
                     </div>
                 </div>
-                @endif
+                @endif --}}
             </div>
             <!-- /.card-body -->
 
