@@ -4,7 +4,7 @@
 
 @section('content')
 
-<!-- @if($videos->isEmpty())
+@if($videos->isEmpty())
 
     <div class="flex flex-col items-center justify-center py-20 text-center">
         <div class="text-5xl mb-4">
@@ -20,7 +20,7 @@
         </p>
     </div>
 
-@else -->
+@else
 @php
     $type = auth()->guard('student')->user()->type;
 @endphp
