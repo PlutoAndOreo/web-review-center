@@ -10,7 +10,7 @@ class SubjectController extends Controller
 {
     public function index()
     {
-        $subjects = Subject::orderBy('name')->get();
+        $subjects = Subject::orderBy('name')->paginate(5);
         return view('admin.pages.subject-list', compact('subjects'));
     }
 
@@ -46,7 +46,7 @@ class SubjectController extends Controller
     public function update(Request $request, $id)
     {
         $subject = Subject::findOrFail($id);
-        
+
         $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:10|unique:rc_subjects,code,' . $id,
@@ -67,7 +67,7 @@ class SubjectController extends Controller
     public function destroy($id)
     {
         $subject = Subject::findOrFail($id);
-        
+
         // Check if subject has videos
         if ($subject->videos()->count() > 0) {
             return redirect()->route('admin.subjects.list')->with('error', 'Cannot delete subject with existing videos.');

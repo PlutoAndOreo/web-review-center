@@ -25,25 +25,22 @@ use App\Http\Controllers\Student\CommentController;
 
 use App\Http\Controllers\StreamVideoController;
 
-    Route::get('/video-stream/{id}', [StreamVideoController::class, 'stream'])->where('path', '.*')->name('stream.video');
+    Route::get('/video-hls/{id}/playlist.m3u8', [StudentVideoController::class, 'hlsPlaylist'])->name('hls.playlist');
+    Route::get('/video-hls/{id}/segment/{segment}', [StreamVideoController::class, 'hlsSegment'])->where('segment', '.*')->name('hls.segment');
+    Route::get('/video-stream/{video_id}', [StreamVideoController::class, 'stream'])->where('path', '.*')->name('stream.video');
 
     Route::get('/', function () {
         return redirect()->route('student.login'); // route name for student login
     });
 
-    // CSRF Token endpoint (public, no auth required)
-    Route::get('/api/csrf-token', [\App\Http\Controllers\CsrfTokenController::class, 'token'])->name('api.csrf-token');
-
-    // Route::middleware('guest:admin')->group(function () {
-        Route::post('admin/register', [RegisteredUserController::class, 'store']);
-        Route::get('admin/login', [AuthenticatedSessionController::class, 'create'])->name('admin.login');
-        Route::post('admin/login', [AuthenticatedSessionController::class, 'store'])->name('admin.store');
-    // });
+    Route::post('admin/register', [RegisteredUserController::class, 'store']);
+    Route::get('admin/login', [AuthenticatedSessionController::class, 'create'])->name('admin.login');
+    Route::post('admin/login', [AuthenticatedSessionController::class, 'store'])->name('admin.store');
 
     Route::middleware(['auth:admin'])->group(function () {
         Route::post('admin/logout', [AuthenticatedSessionController::class, 'logout'])->name('admin.logout');
         Route::get('admin/dashboard',[DashboardController::class,'index'])->name('admin.dashboard');
-        
+
         Route::prefix('admin/users')->name('admin.users.')->group(function () {
             Route::get('/',[UserController::class,'index'])->name('list');
             Route::get('/create',[UserController::class,'create'])->name('create');
@@ -61,6 +58,7 @@ use App\Http\Controllers\StreamVideoController;
             Route::post('/{id}/update',[VideoController::class,'update'])->name('update');
             Route::delete('/{id}',[VideoController::class,'destroy'])->name('destroy');
             Route::get('/{id}/stream',[VideoController::class,'stream'])->name('stream');
+            Route::get('/progress/{token}', [VideoController::class, 'progress'])->name('admin.progress');
 
         });
 
@@ -94,10 +92,8 @@ use App\Http\Controllers\StreamVideoController;
             Route::post('/bulk-delete', [NotificationController::class, 'bulkDelete'])->name('bulk-delete');
         });
     });
-    
-Route::get('admin/videos/progress/{token}', [VideoController::class, 'progress'])->name('admin.progress');
+    Route::get('admin/videos/progress/{token}', [VideoController::class, 'progress'])->name('admin.progress');
 
-// Student Auth & Dashboard
     Route::prefix('student')->name('student.')->group(function () {
         Route::get('/register', [RegistrationController::class, 'showRegistrationForm'])->name('register');
         Route::post('/register', [RegistrationController::class, 'register'])->name('register.submit');
@@ -108,31 +104,35 @@ Route::get('admin/videos/progress/{token}', [VideoController::class, 'progress']
     Route::prefix('student')->name('student.')->middleware('auth:student')->group(function () {
         Route::get('/dashboard', [StudentDashboardController::class, 'dashboard'])->name('dashboard');
         Route::get('/info', [StudentDashboardController::class, 'info'])->name('info');
-        Route::post('/info', [StudentDashboardController::class, 'update'])->name('updateInfo');
+        Route::post('/info', [StudentDashboardController::class, 'updateInfo'])->name('updateInfo');
+        Route::post('/change-password', [StudentDashboardController::class, 'changePassword'])->name('changePassword');
 
         // Videos
-        Route::get('/videos/list', [StudentVideoController::class, 'list'])->name('videos.list');
-        Route::get('/videos/{id}', [StudentVideoController::class, 'index'])->whereNumber('id')->name('videos');
-        Route::get('/video-hls/{id}/playlist.m3u8', [StudentVideoController::class, 'hlsPlaylist'])->name('video.hls.playlist');
-        Route::get('/video-hls/{id}/segment/{segment}', [StreamVideoController::class, 'hlsSegment'])->where('segment', '.*')->name('video.hls.segment');
-        Route::get('/videos/{id}/completion-status', [StudentVideoController::class, 'checkCompletionStatus'])->name('videos.completion-status');
+        Route::prefix('videos')->name('videos.')->group(function () {
+            Route::get('/list', [StudentVideoController::class, 'list'])->name('list');
+            Route::get('/subject/{subjectId}', [StudentVideoController::class, 'listBySubject'])->name('bySubject');
+            Route::get('/{id}', [StudentVideoController::class, 'index'])->whereNumber('id');
+            Route::get('/video-player/{video_id}', [StudentVideoController::class, 'showVideoPlayer'])->name('player');
+            Route::post('/completion-status/{video_id}', [StudentVideoController::class, 'checkCompletionStatus'])->name('completion-status');
+            Route::post('/confirm-exam/{video_id}', [StudentVideoController::class, 'confirmExam'])->name('confirm-exam');
+
+        });
         // Logout
         Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
         // Other pages
         Route::post('/videos/{id}/history', [RegistrationController::class, 'addHistory'])->name('videos.history');
         Route::post('/videos/{id}/complete', [RegistrationController::class, 'markComplete'])->name('videos.complete');
         Route::get('/google-forms', [RegistrationController::class, 'googleForms'])->name('google.forms');
-        
+
         // Comments
-        Route::post('/videos/{id}/comments', [CommentController::class, 'store'])->name('comments.store');
+        Route::post('/videos/{video_id}/comments', [CommentController::class, 'store'])->name('comments.store');
         Route::get('/videos/{id}/comments', [CommentController::class, 'index'])->name('comments.index');
 
     });
-    
+
     Route::post('/auto-logout', function () {
         \Auth::logout();
         session()->flush();
         return response()->json(['status' => 'logged_out']);
     })->name('auto.logout');
-    
-    
+

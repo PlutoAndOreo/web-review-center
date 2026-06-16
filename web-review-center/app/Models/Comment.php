@@ -16,11 +16,25 @@ class Comment extends Model
         'admin_id',
         'admin_replied_at',
         'is_read',
+        'parent_id'
     ];
 
     protected $casts = [
         'is_read' => 'boolean',
     ];
+
+    public function parent()
+    {
+        return $this->belongsTo(Comment::class, 'parent_id');
+    }
+
+
+    public function replies()
+    {
+        return $this->hasMany(Comment::class, 'parent_id')
+                    ->with('replies')
+                    ->orderBy('created_at','asc');
+    }
 
     public function video()
     {

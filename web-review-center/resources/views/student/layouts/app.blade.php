@@ -9,17 +9,26 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
+    <style>
+       #hide-video-controls video::-webkit-media-controls {
+            display: none !important;
+        }
+
+        #hide-video-controls video::-webkit-media-controls-panel {
+            display: none !important;
+        }
+    </style>
 </head>
 <body >
-    
+
 <div class="flex">
         @include('student.pages.sidebar')
         <main class="flex-1 p-8">
             @yield('content')
         </main>
     </div>
-    
-    
+
+
     @stack('js')
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </body>

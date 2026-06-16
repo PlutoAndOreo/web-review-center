@@ -30,7 +30,7 @@ class StreamVideoController extends Controller
         // Rewrite relative segment paths to absolute URLs
         // FFmpeg generates: segment_000.ts
         // We convert to: /student/video-hls/{id}/segment/segment_000.ts
-        $baseUrl = url("/student/video-hls/{$id}/segment");
+        $baseUrl = url("/video-hls/{$id}/segment");
         $content = preg_replace(
             '/^(segment_\d+\.ts)$/m',
             $baseUrl . '/$1',

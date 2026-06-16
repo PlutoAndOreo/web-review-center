@@ -13,7 +13,7 @@
     <div class="min-h-screen flex items-center justify-center  py-10">
         <div class="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-lg">
             <div class="flex items-center justify-between mb-6">
-                <a href="{{ route('admin.videos.list') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800">
+                <a href="{{ route('admin.videos.list', ['sort' => 'asc']) }}" class="inline-flex items-center text-blue-600 hover:text-blue-800">
                     <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
@@ -132,7 +132,7 @@
         @section('js')
         <script>
             const uploadUrl = "{{ route('admin.videos.upload') }}";
-            const progressUrlBase = "{{ url('videos/progress') }}";
+            const progressUrlBase = "{{ url('admin/videos/progress') }}";
         </script>
         
 		@vite('resources/js/admin/video-upload.js')

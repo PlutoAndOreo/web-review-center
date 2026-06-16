@@ -3,7 +3,7 @@
 @section('title', 'Student Registration')
 
 @section('content')
-<div class="min-h-screen flex items-center justify-center bg-gray-100">
+<div class="min-h-screen flex items-center justify-cente">
     <div class="w-full max-w-lg bg-white rounded-xl shadow-xl p-10">
         <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">
             Student Registration
@@ -15,9 +15,9 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-gray-700 mb-1">First Name</label>
-                    <input 
-                        type="text" 
-                        name="first_name" 
+                    <input
+                        type="text"
+                        name="first_name"
                         value="{{ old('first_name') }}"
                         class="w-full px-4 py-2 border rounded-lg
                             focus:outline-none focus:border-green-500
@@ -29,9 +29,9 @@
 
                 <div>
                     <label class="block text-gray-700 mb-1">Last Name</label>
-                    <input 
+                    <input
                         type="text"
-                        name="last_name" 
+                        name="last_name"
                         value="{{ old('last_name') }}"
                         class="w-full px-4 py-2 border rounded-lg
                             focus:outline-none focus:border-green-500
@@ -46,9 +46,9 @@
             {{-- Email --}}
             <div>
                 <label class="block text-gray-700 mb-1">Email</label>
-                <input 
-                    type="email" 
-                    name="email" 
+                <input
+                    type="email"
+                    name="email"
                     value="{{ old('email') }}"
                     placeholder="sample@gmail.com"
                     class="w-full px-4 py-2 border rounded-lg
@@ -59,57 +59,91 @@
                 @enderror
             </div>
 
-            {{-- Phone --}}
-            <div>
-                <label class="block text-gray-700 mb-1">Phone</label>
-                <input 
-                    type="text" 
-                    name="phone" 
-                    value="{{ old('phone') }}"
-                    placeholder="00000000000"
-                    class="w-full px-4 py-2 border rounded-lg
-                        focus:outline-none focus:border-green-500
-                        focus:ring-2 focus:ring-green-200">
-                @error('phone')
-                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-            {{-- Phone --}}
-            <div>
-                <label class="block text-gray-700 mb-1">Phone</label>
-                <input 
-                    type="text" 
-                    name="phone" 
-                    value="{{ old('phone') }}"
-                    placeholder="00000000000"
-                    class="w-full px-4 py-2 border rounded-lg
-                        focus:outline-none focus:border-green-500
-                        focus:ring-2 focus:ring-green-200">
-                @error('phone')
-                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-            <div>
-                <label for="birthdate" class="block text-gray-700 mb-1">
-                    Birthdate
+            {{-- Password --}}
+            <div x-data="{ show: false }">
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
+                    Password
                 </label>
-
+            <div class="relative mb-4">
                 <input
-                    type="date"
-                    name="birthdate"
-                    id="birthdate"
-                    value="{{ old('birthdate') }}"
-                    max="{{ date('Y-m-d', strtotime('-15 years')) }}"  {{-- minimum age 15 --}}
-                    class="w-full px-4 py-2 border rounded-lg
-                        focus:outline-none
-                        focus:border-green-500
-                        focus:ring-2 focus:ring-green-200"
+                      :type="show ? 'text' : 'password'"
+                      name="password"
+                      id="password"
+                      placeholder="••••••••"
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:border-green-300"
+                  >
+                <button
+                    type="button"
+                    class="absolute inset-y-0 right-3 flex items-center text-gray-500 "
+                    @click="show = !show"
                 >
+                    <!-- Eye open -->
 
-                @error('birthdate')
+                    <svg x-show="!show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+
+
+                    <!-- Eye closed -->
+
+                    <svg x-show="show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    </svg>
+                </button>
+                @error('password')
                     <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                 @enderror
             </div>
+
+            {{-- Confirm Password --}}
+            <div x-data="{ show: false }">
+                <label for="confirm_password" class="block text-sm font-medium text-gray-700 mb-1">
+                    Confirm Password
+                </label>
+            <div class="relative mb-4">
+                <input
+                      :type="show ? 'text' : 'password'"
+                      name="password_confirmation"
+                      id="confirm_password"
+                      placeholder="••••••••"
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:border-green-300"
+                  >
+                <button
+                    type="button"
+                    class="absolute inset-y-0 right-3 flex items-center text-gray-500 "
+                    @click="show = !show"
+                >
+                    <!-- Eye open -->
+
+                    <svg x-show="!show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+
+
+                    <!-- Eye closed -->
+
+                    <svg x-show="show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    </svg>
+                </button>
+                @error('password_confirmation')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <button
+                type="submit"
+                id="submitBtn"
+                class="w-full bg-green-500 text-white py-2 rounded-lg
+                    hover:bg-green-600 transition duration-200">
+                <span id="btnText">Register</span>
+                <svg id="spinner" class="hidden animate-spin h-5 w-5 ml-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+            </button>
 
         </form>
 

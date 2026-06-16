@@ -39,8 +39,6 @@ class ProcessUploadVideo implements ShouldQueue
 
             // Process video and generate HLS segments
             [$hlsPlaylistPath, $storedPath] = $this->processVideoToHLS($rawFile, $videoId);
-            // Generate thumbnail from the stored video file (before HLS conversion)
-            $thumbnailPath = $this->generateThumbnail($storedPath, 5, $videoId);
 
             Log::info("Video processing completed for ID: {$videoId}");
 
@@ -49,7 +47,6 @@ class ProcessUploadVideo implements ShouldQueue
             if ($video) {
                 $video->update([
                     'file_path'    => $hlsPlaylistPath,
-                    'video_thumb'  => $thumbnailPath,
                     'status'       => 'Published',
                 ]);
             }
@@ -114,8 +111,6 @@ class ProcessUploadVideo implements ShouldQueue
         if (!file_exists($parentDir)) {
             Storage::disk('private')->makeDirectory("videos/{$today}");
             
-            // Force ownership immediately after creation (before any other operations)
-            // This ensures the directory is owned by www-data even if created by root
             $this->forceDirectoryOwnership($parentDir);
         } else {
             // Directory exists, but might be owned by root - fix it
@@ -137,42 +132,42 @@ class ProcessUploadVideo implements ShouldQueue
         // Also ensure parent directory permissions are still correct (in case subdirectory creation changed them)
         $this->setDirectoryPermissionsRecursive($parentDir);
 
-        Log::info("Converting video to HLS format for ID: {$videoId}");
+        Log::channel('video_processing')->info("Converting video to HLS format for ID: {$videoId}");
+
 
         // Check for watermark
         $watermarkPath = public_path('image/logo.png');
+
         $hasWatermark = file_exists($watermarkPath);
         
         $inputPath = Storage::disk('private')->path($storedPath);
         $playlistFullPath = Storage::disk('private')->path($hlsPlaylistPath);
-        
-        // Build FFmpeg HLS conversion command
-        // Key parameters:
-        // -hls_time 10: 10-second segments
-        // -hls_list_size 0: Keep all segments (VOD mode)
-        // -hls_segment_filename: Segment naming pattern (segment_000.ts, segment_001.ts, etc.)
+    
+       
         if ($hasWatermark) {
-            // With watermark: overlay logo on video
-            // scale=200:-1 means 200 pixels wide, height auto-calculated to maintain aspect ratio
+
             $ffmpegCommand = sprintf(
-                'ffmpeg -i %s -i %s -filter_complex "[1:v]scale=200:-1[wm];[0:v][wm]overlay=W-w-20:H-h-20" -map 0:a? -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 128k -hls_time 10 -hls_list_size 0 -hls_segment_filename %s/segment_%%03d.ts -start_number 0 -f hls -y %s',
+                'ffmpeg -i %s -i %s -filter_complex "[1:v]scale=120:-1[wm];[0:v][wm]overlay=W-w-10:H-h-10[v]" -map "[v]" -map 0:a? -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 128k -hls_time 10 -hls_list_size 0 -hls_segment_filename %s/segment_%%03d.ts -start_number 0 -f hls -y %s',
                 escapeshellarg($inputPath),
                 escapeshellarg($watermarkPath),
                 escapeshellarg($hlsOutputPath),
                 escapeshellarg($playlistFullPath)
             );
+        
         } else {
-            // Without watermark: standard HLS conversion
+        
             $ffmpegCommand = sprintf(
-                'ffmpeg -i %s -map 0:v? -map 0:a? -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 128k -hls_time 10 -hls_list_size 0 -hls_segment_filename %s/segment_%%03d.ts -start_number 0 -f hls -y %s',
+                'ffmpeg -i %s -map 0:v -map 0:a? -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 128k -hls_time 10 -hls_list_size 0 -hls_segment_filename %s/segment_%%03d.ts -start_number 0 -f hls -y %s',
                 escapeshellarg($inputPath),
                 escapeshellarg($hlsOutputPath),
                 escapeshellarg($playlistFullPath)
             );
-        }
         
+        }
+       
         // Execute FFmpeg command
-        Log::info("Executing FFmpeg command for video ID: {$videoId}");
+        Log::channel('video_processing')->info("Executing FFmpeg command for video ID: {$videoId}");
+        
         exec($ffmpegCommand . ' 2>&1', $output, $returnCode);
         
         if ($returnCode !== 0) {
@@ -184,39 +179,15 @@ class ProcessUploadVideo implements ShouldQueue
             throw new \Exception("Failed to convert video to HLS format: " . implode("\n", $output));
         }
         
-        Log::info("FFmpeg HLS conversion completed successfully" . ($hasWatermark ? " with watermark" : "") . " for video ID: {$videoId}");
+        Log::channel('video_processing')->info("FFmpeg HLS conversion completed successfully" . ($hasWatermark ? " with watermark" : "") . " for video ID: {$videoId}");
         
         // Set permissions recursively on entire HLS directory (like chown -R www-data:www-data)
         // This ensures all files and subdirectories have correct ownership
         $this->setDirectoryPermissionsRecursive($hlsOutputPath);
 
-        Log::info("HLS conversion completed for video ID: {$videoId}");
+        Log::channel('video_processing')->info("HLS conversion completed for video ID: {$videoId}");
 
         return [$hlsPlaylistPath, $storedPath];
-    }
-
-
-    private function generateThumbnail(string $videoPath, int $second = 10, int $videoID): string
-    {
-        $today = date('Y-m-d');
-        $thumbnailRelative = 'thumbnails/review_center_video_' . $videoID . '_' . $today . '.jpg';
-
-        FFMpeg::fromDisk('private')
-            ->open($videoPath)
-            ->getFrameFromSeconds($second)
-            ->export()
-            ->toDisk('public')
-            ->save($thumbnailRelative);
-        
-        // Set file permissions for www-data after saving thumbnail
-        $thumbnailPath = Storage::disk('public')->path($thumbnailRelative);
-        $this->setFilePermissions($thumbnailPath);
-        
-        // Ensure thumbnails directory has correct permissions
-        $thumbnailsDir = dirname($thumbnailPath);
-        $this->setFilePermissions($thumbnailsDir, true);
-
-        return $thumbnailRelative;
     }
 
     /**

@@ -10,6 +10,11 @@
 @section('content')
 @include('admin.components.logout')
 
+<div id="notif-container"
+     style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+</div>
+
+
 <div class="notifications-container">
     <div class="max-w-7xl mx-auto">
         <div class="notifications-header">
@@ -43,12 +48,12 @@
                             </div>
                             <div class="notification-actions-row">
                                 @if(!$notification->is_read)
-                                    <button onclick="markAsRead({{ $notification->id }})" 
+                                    <button onclick="markAsRead({{ $notification->id }})"
                                         class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
                                         Mark as Read
                                     </button>
                                 @endif
-                                <button onclick="deleteNotification({{ $notification->id }})" 
+                                <button onclick="deleteNotification({{ $notification->id }})"
                                     class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
                                     Delete
                                 </button>
@@ -62,7 +67,6 @@
                             <div class="notification-comment">
                                 {{ $notification->comment->content }}
                             </div>
-
                             @if($notification->comment->admin_reply)
                                 <div class="notification-existing-reply" id="existingReply-{{ $notification->id }}">
                                     <div class="notification-reply-author">
@@ -102,6 +106,7 @@
                             @endif
                         </div>
                     </div>
+                    <input type="text" class="parent_id" value="{{ $notification->comment->id ?? '' }}">
                 @endforeach
             </div>
 
@@ -121,6 +126,6 @@
 </div>
 
 @push('js')
-@vite('resources/js/admin/notifications.js')
+@vite(['resources/js/admin/notifications.js', 'resources/js/app.js'])
 @endpush
 @endsection

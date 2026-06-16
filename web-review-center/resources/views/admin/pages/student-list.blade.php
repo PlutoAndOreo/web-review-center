@@ -47,16 +47,7 @@
                                         Email
                                     </th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Address
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Phone Number
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        School Graduated
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Year Graduated
+                                        Type
                                     </th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Status
@@ -75,16 +66,10 @@
                                             {{ $student->email }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {{ $student->address }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {{ $student->phone }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {{ $student->school_graduated }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {{ $student->graduation_year }}
+
+                                            <p class="{{ $student->type == 0 ? 'text-red-400' : 'text-green-400' }}">
+                                                {{ $student->type == 0 ? 'Walk-in' : 'Online' }}
+                                            </p>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                                             @if($student->is_active ?? true)
@@ -98,11 +83,11 @@
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
-                                            <a href="{{ route('admin.students.edit', $student->id) }}" 
+                                            <a href="{{ route('admin.students.edit', $student->id) }}"
                                                 class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                                            <a href="{{ route('admin.students.video-progress', $student->id) }}" 
+                                            <a href="{{ route('admin.students.video-progress', $student->id) }}"
                                                 class="text-green-600 hover:text-green-900 mr-3">Progress</a>
-                                            <form action="{{ route('admin.students.destroy', $student->id) }}" 
+                                            <form action="{{ route('admin.students.destroy', $student->id) }}"
                                                 method="POST" class="inline"
                                                 onsubmit="return confirm('Are you sure you want to delete this student?')">
                                                 @csrf

@@ -3,15 +3,15 @@
 @section('title', 'Videos')
 
 @section('content')
+
   <div
       class="max-w-5xl mx-auto bg-white p-6 rounded-xl shadow"
       x-data="{ progress: 0, completed: false, showExam: false }">
-
       <!--  HEADER -->
       <div class="flex items-center justify-between mb-4">
 
           <!-- Back Button -->
-          <a href="{{ route('student.videos.list') }}"
+          <a href="{{ route('student.videos.list', ['sort' => 'asc']) }}"
             class="text-green-600 font-medium hover:underline">
               ← Back
           </a>
@@ -33,7 +33,7 @@
           x-data="videoPlayer('{{ route('stream.video', $video->id) }}')"
           x-init="init()"
           class="bg-black rounded-lg overflow-hidden mb-6">
-          
+
           <video
               x-ref="video"
               class="w-full h-[400px]"
@@ -51,7 +51,7 @@
               {{ $video->url }}
           </video>
 
-<button
+    <button
         @click="toggle()"
         class="absolute inset-0 flex items-center justify-center"
     >
@@ -81,14 +81,14 @@
     </button>
 
 
-      </div>
+    </div>
 
-      <button 
+      <button
           @click="showExam = !showExam"
           class="w-full mb-6 py-3 rounded-lg font-semibold transition
                 bg-green-600 text-white hover:bg-green-700
                 disabled:bg-gray-300 disabled:cursor-not-allowed">
-          <span x-text="showExam ? 'Hide Exam' : 'Take Exam'"></span> 
+          <span x-text="showExam ? 'Hide Exam' : 'Take Exam'"></span>
       </button>
       <!--  GOOGLE FORM (ALPINE CONTROLLED) -->
       <div x-show="showExam" x-transition class="border-t pt-6">
@@ -117,7 +117,7 @@
           </button>
       </div>
 
-      <div class="mt-10 border-t pt-6">
+    <div class="mt-10 border-t pt-6">
 
     <!--  Header -->
     <h2 class="text-lg font-semibold text-gray-900 mb-4">

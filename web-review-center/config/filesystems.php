@@ -64,6 +64,11 @@ return [
             'root' => storage_path('app/private'),
             'visibility' => 'private',
         ],
+        'video_processing' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/video_processing.log'),
+            'level' => 'debug',
+        ],
     ],
     /*
     |--------------------------------------------------------------------------

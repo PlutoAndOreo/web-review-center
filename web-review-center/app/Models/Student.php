@@ -12,6 +12,9 @@ class Student extends Authenticatable
     protected $guard = 'student';
     protected $table = 'rc_students';
 
+    const TYPE_WALK_IN = 0;
+    const TYPE_ONLINE = 1;
+
     protected $fillable = [
         'first_name',
         'last_name',
@@ -38,5 +41,13 @@ class Student extends Authenticatable
     public function histories()
     {
         return $this->hasMany(StudentHistory::class, 'student_id');
+    }
+
+    public static function types(): array
+    {
+        return [
+            self::TYPE_WALK_IN => 'Walk-in',
+            self::TYPE_ONLINE => 'Online',
+        ];
     }
 }

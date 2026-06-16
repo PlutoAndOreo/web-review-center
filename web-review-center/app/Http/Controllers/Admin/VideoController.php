@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use ProtoneMedia\LaravelFFMpeg\Filters\WatermarkFactory;
 use Illuminate\Support\Facades\Storage;
+use App\Services\VideoProcessServices;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\VideoRequest;
@@ -17,6 +18,7 @@ use Illuminate\Support\Str;
 use App\Models\Subject;
 use App\Models\Video;
 use Carbon\Carbon;
+use Exception;
 
 class VideoController extends Controller
 {
@@ -36,8 +38,11 @@ class VideoController extends Controller
     {
         try {
             $file = $request->file('video');
+            $nameOnly = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+
             $uploadToken = $request->input('upload_token');
-            Log::info("start");
+
+            Log::channel('video_processing')->info("Received upload request for video: {$nameOnly}, upload token: {$uploadToken}");
 
             $tempPath = $file->store('uploads/tmp', 'private'); 
             $absoluteTempPath = Storage::disk('private')->path($tempPath);
@@ -47,11 +52,26 @@ class VideoController extends Controller
             $tmpDir = dirname($absoluteTempPath);
             $this->setFilePermissions($tmpDir, true);
 
+            $thumbnailName = $nameOnly. '_' . time() . '.jpg';
+            $thumbnailPath = public_path('thumbnails/' . $thumbnailName);
+            $watermark = public_path('image/logo.png');
+
+
+            if (!file_exists(public_path('thumbnails'))) {
+                mkdir(public_path('thumbnails'), 0777, true);
+            }
+
+            $time = 2; 
+
+            $command = "ffmpeg -ss {$time} -i {$absoluteTempPath} -i {$watermark} -vframes 1 -filter_complex \"[1:v]scale=120:-1[wm];[0:v][wm]overlay=W-w-10:H-h-10\" -q:v 2 -y {$thumbnailPath}";
+            
+            exec($command);
+            
             $video = Video::create([
                 'title'              => $request->title,
                 'description'        => $request->description,
                 'file_path'          => null,
-                'video_thumb'        => null,
+                'video_thumb'        => 'thumbnails/' . $thumbnailName,
                 'google_form_upload' => $request->google_form_upload,
                 'google_form_link'   => $request->google_form_link,
                 'subject_id'         => $request->subject_id,
@@ -60,39 +80,26 @@ class VideoController extends Controller
                 'user_id'            => auth()->guard('admin')->id(),
             ]);
 
-            Log::info("Dispatching Process VideoJob for video ID: {$video->id}");
-            // Dispatch background job (this will process EVERYTHING)
+            Log::channel('video_processing')->info("Dispatching Process VideoJob for video ID: {$video->id}");
+
             ProcessUploadVideo::dispatch(
                 $video->id,
                 $absoluteTempPath,
             );
 
-            if ($request->ajax()) {
-                // ensure flash message is available after client-side redirect
-                session()->flash('success', 'Video uploaded and processed successfully!');
-                return response()->json([
-                    'message'  => 'Video uploaded and processed successfully!',
-                    'id'       => $videoRecord->id,
-                    'redirect' => route('admin.videos.list'),
-                ]);
-            }
+            return response()->json([
+                'message'  => 'Video uploaded. Processing in background...',
+                'redirect' => route('admin.videos.list'),
+            ]);
 
-            return redirect()->route('admin.videos.list')->with('success', 'Video uploaded and processed successfully!');
-        } catch (\Throwable $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return back()
                 ->withErrors(['video' => 'Upload failed: ' . $e->getMessage()])
                 ->withInput();
         }
     }
-    public function progress(string $token)
-    {
-        $percent = Cache::get('video_progress:' . $token, 0);
-        return response()->json([
-            'percent' => (int) $percent,
-        ]);
-    }
-
+ 
     public function edit($id)
     {
         $video = Video::findOrFail($id);
@@ -240,4 +247,6 @@ class VideoController extends Controller
             return false;
         }
     }
+
+    
 }

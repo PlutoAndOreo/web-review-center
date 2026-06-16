@@ -87,7 +87,7 @@
                                             @if($video->subject)
                                                 <span
                                                     class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                    {{ $video->subject->name }} ({{ $video->subject->code }})
+                                                    {{ $video->subject->name }} 
                                                 </span>
                                             @else
                                                 <span class="text-gray-400 italic">No subject</span>
@@ -95,9 +95,9 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             @if($video->video_thumb)
-                                                <img src="{{ url($video->video_thumb) }}"
+                                                <img src="{{ asset($video->video_thumb) }}"
                                                     alt="Video Thumbnail"
-                                                    class="w-20 h-12">
+                                                    >
                                             @else
                                                 <span class="text-red-500 italic">No thumbnail</span>
                                             @endif

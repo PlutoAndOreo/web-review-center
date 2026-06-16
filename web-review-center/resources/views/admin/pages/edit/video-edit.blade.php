@@ -7,7 +7,7 @@
     <div class="card card-primary">
         <div class="card-header d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <a href="{{ route('admin.videos.list') }}" class="btn btn-sm btn-outline-light mr-3">
+                <a href="{{ route('admin.videos.list', ['sort' => 'asc']) }}" class="btn btn-sm btn-outline-light mr-3">
                     <i class="fas fa-arrow-left"></i> Back
                 </a>
                 <h3 class="card-title mb-0">Edit Video</h3>

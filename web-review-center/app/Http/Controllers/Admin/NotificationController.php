@@ -13,6 +13,7 @@ class NotificationController extends Controller
     {
         $notifications = Notification::with(['comment.student', 'comment.video', 'comment.admin'])
             ->where('admin_id', auth()->guard('admin')->id())
+
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -23,7 +24,7 @@ class NotificationController extends Controller
     {
         $notification = Notification::where('admin_id', auth()->guard('admin')->id())
             ->findOrFail($id);
-        
+
         $notification->update(['is_read' => true]);
 
         return response()->json(['success' => true]);
@@ -51,7 +52,7 @@ class NotificationController extends Controller
     {
         $notification = Notification::where('admin_id', auth()->guard('admin')->id())
             ->findOrFail($id);
-        
+
         $notification->delete();
 
         return response()->json(['success' => true, 'message' => 'Notification deleted successfully']);
@@ -82,21 +83,26 @@ class NotificationController extends Controller
             ->findOrFail($id);
 
         $comment = $notification->comment;
-        
+
         if ($comment) {
-            $comment->update([
-                'admin_reply' => $request->reply,
-                'admin_id' => auth()->guard('admin')->id(),
+            $comment->create([
+                'admin_reply'      => $request->reply,
+                'admin_id'         => auth()->guard('admin')->id(),
                 'admin_replied_at' => now(),
+                'content'          => $request->reply,
+                'parent_id'        => $comment->id,
+                'is_read'          => true,
+                'video_id'         => $comment->video_id,
+                'student_id'       => $comment->student_id,
             ]);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Reply sent successfully',
                 'reply' => [
                     'content' => $comment->admin_reply,
                     'admin_name' => auth()->guard('admin')->user()->first_name . ' ' . auth()->guard('admin')->user()->last_name,
-                    'replied_at' => $comment->admin_replied_at->format('M d, Y H:i'),
+                    'replied_at' => now()->format('M d, Y H:i'),
                 ]
             ]);
         }

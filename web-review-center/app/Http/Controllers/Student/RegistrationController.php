@@ -21,21 +21,12 @@ class RegistrationController extends Controller
     {
         $validated = $request->validated();
 
-        // Combine area code and phone number
-        $areaCode = $validated['area_code'] ?? '';
-        $phoneNumber = $validated['phone'] ?? '';
-        $fullPhone = $areaCode . $phoneNumber;
-
         $student = Student::create([
-            'first_name'        => $validated['first_name'],
-            'last_name'         => $validated['last_name'],
-            'email'             => $validated['email'],
-            'phone'             => $fullPhone, 
-            'address'           => $validated['address'] ?? null,
-            'school_graduated'  => $validated['school_graduated'] ?? null,
-            'graduation_year'   => $validated['graduation_year'] ?? null,
-            'password'          => bcrypt($validated['password']),
-            'type'              => 1,
+            'first_name'  => $validated['first_name'],
+            'last_name'   => $validated['last_name'],
+            'email'       => $validated['email'],
+            'password'    => Hash::make($validated['password']),
+            'type'        => Student::TYPE_ONLINE,
         ]);
 
         auth()->guard('student')->login($student);
@@ -46,7 +37,7 @@ class RegistrationController extends Controller
     public function addHistory(Request $request, $id)
     {
         $studentId = auth()->guard('student')->id();
-        
+
         $exists = DB::table('rc_student_histories')
             ->where('student_id', $studentId)
             ->where('video_id', $id)
@@ -76,7 +67,7 @@ class RegistrationController extends Controller
     public function markComplete(Request $request, $id)
     {
         $studentId = auth()->guard('student')->id();
-        
+
         $exists = DB::table('rc_student_histories')
             ->where('student_id', $studentId)
             ->where('video_id', $id)

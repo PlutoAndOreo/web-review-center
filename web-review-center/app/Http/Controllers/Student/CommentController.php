@@ -11,44 +11,43 @@ use App\Models\Student;
 use App\Models\Video;
 use App\Models\Admin;
 use Carbon\Carbon;
+use App\Events\CommentEvent;
 
 class CommentController extends Controller
 {
     public function store(Request $request, $videoId)
     {
-        $request->validate([
-            'content' => 'required|string|max:1000',
-        ]);
+
 
         $video = Video::findOrFail($videoId);
-        
+
         $comment = Comment::create([
-            'video_id' => $videoId,
-            'student_id' => Auth::guard('student')->id(),
-            'content' => $request->content,
+            'video_id'      => $videoId,
+            'student_id'    => Auth::guard('student')->id(),
+            'content'       => $request->message,
+            'parent_id'     => $request->parent_id ?? null,
         ]);
 
-        // Create notification for all admins
         $admins = Admin::all();
         foreach ($admins as $admin) {
-            Notification::create([
-                'admin_id' => $admin->id,
-                'comment_id' => $comment->id,
-                'type' => 'comment',
-                'message' => 'New comment from ' . Auth::guard('student')->user()->first_name . ' ' . Auth::guard('student')->user()->last_name . ' on video: ' . $video->title,
-            ]);
+            Notification::firstOrCreate(
+                [
+                    'admin_id'   => $admin->id,
+                    'comment_id' => $comment->id,
+                    'type'       => 'comment',
+                ],
+                [
+                    'message'   => 'New comment from ' .
+                        Auth::guard('student')->user()->first_name . ' ' .
+                        Auth::guard('student')->user()->last_name .
+                        ' on video: ' . $video->title,
+                ]
+            );
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Comment added successfully!',
-            'comment' => [
-                'id' => $comment->id,
-                'content' => $comment->content,
-                'student_name' => Auth::guard('student')->user()->first_name . ' ' . Auth::guard('student')->user()->last_name,
-                'created_at' => $comment->created_at->format('M d, Y H:i'),
-            ]
-        ]);
+        event(new CommentEvent($comment));
+
+        return redirect()->back();
     }
 
     public function index($videoId)
@@ -63,13 +62,13 @@ class CommentController extends Controller
         return response()->json([
             'comments' => $comments->map(function ($comment) {
                 return [
-                    'id' => $comment->id,
-                    'content' => $comment->content,
-                    'student_name' => $comment->student->first_name . ' ' . $comment->student->last_name,
-                    'created_at' => $comment->created_at->format('M d, Y H:i'),
-                    'admin_reply' => $comment->admin_reply,
-                    'admin_name' => $comment->admin ? ($comment->admin->first_name . ' ' . $comment->admin->last_name) : null,
-                    'admin_replied_at' => Carbon::parse($comment->admin_replied_at) ? Carbon::parse($comment->admin_replied_at)->format('M d, Y H:i') : null,
+                    'id'                => $comment->id,
+                    'content'           => $comment->content,
+                    'student_name'      => $comment->student->first_name . ' ' . $comment->student->last_name,
+                    'created_at'        => $comment->created_at->format('M d, Y H:i'),
+                    'admin_reply'       => $comment->admin_reply,
+                    'admin_name'        => $comment->admin ? ($comment->admin->first_name . ' ' . $comment->admin->last_name) : null,
+                    'admin_replied_at'  => Carbon::parse($comment->admin_replied_at) ? Carbon::parse($comment->admin_replied_at)->format('M d, Y H:i') : null,
                 ];
             })
         ]);
