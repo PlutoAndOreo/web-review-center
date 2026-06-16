@@ -34,7 +34,7 @@ services:
     restart: unless-stopped
     platform: linux/x86_64
     ports:
-      - "3306:3306"
+      - "3307:3306"
     environment:
       LANG: C.UTF-8
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
