@@ -1,10 +1,11 @@
 # Variables
-DOCKER_COMPOSE = docker compose
-PROJECT_NAME = web-review-center
-PHP_CONTAINER = php
-NGINX_CONTAINER = nginx
-MYSQL_CONTAINER = mysql
-NODE_CONTAINER = node
+DOCKER_COMPOSE 		= docker compose
+PROJECT_NAME 		= web-review-center
+PHP_CONTAINER 		= php
+NGINX_CONTAINER 	= nginx
+MYSQL_CONTAINER 	= mysql
+NODE_CONTAINER 		= node
+DOCKER_COMPOSE_PROD = docker compose -f docker-compose-prod.yml
 
 # Default target
 .PHONY: help
@@ -102,3 +103,18 @@ cache-clear:
 	$(DOCKER_COMPOSE) exec $(PHP_CONTAINER) php artisan config:clear
 	$(DOCKER_COMPOSE) exec $(PHP_CONTAINER) php artisan route:clear
 	$(DOCKER_COMPOSE) exec $(PHP_CONTAINER) php artisan view:clear
+
+# Production build
+.PHONY: build-prod
+build-prod:
+	$(DOCKER_COMPOSE_PROD) build
+
+# Start production services
+.PHONY: up-prod
+up-prod:
+	$(DOCKER_COMPOSE_PROD) up -d
+
+# Stop production services
+.PHONY: down-prod
+down-prod:
+	$(DOCKER_COMPOSE_PROD) down
