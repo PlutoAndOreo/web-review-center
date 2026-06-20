@@ -41,12 +41,17 @@ class VideoController extends Controller
             $nameOnly = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 
             $uploadToken = $request->input('upload_token');
+            Log::info('Video Path Debug', [
+                'db_path' => $video->file_path,
+                'full_path' => Storage::disk('private')->path($video->file_path),
+                'exists' => Storage::disk('private')->exists($video->file_path),
+            ]);
 
             Log::channel('video_processing')->info("Received upload request for video: {$nameOnly}, upload token: {$uploadToken}");
 
-            $tempPath = $file->store('uploads/tmp', 'private'); 
+            $tempPath = $file->store('uploads/tmp', 'private');
             $absoluteTempPath = Storage::disk('private')->path($tempPath);
-            
+
             // Set file permissions for www-data
             $this->setFilePermissions($absoluteTempPath);
             $tmpDir = dirname($absoluteTempPath);
@@ -61,12 +66,12 @@ class VideoController extends Controller
                 mkdir(public_path('thumbnails'), 0777, true);
             }
 
-            $time = 2; 
+            $time = 2;
 
             $command = "ffmpeg -ss {$time} -i {$absoluteTempPath} -i {$watermark} -vframes 1 -filter_complex \"[1:v]scale=120:-1[wm];[0:v][wm]overlay=W-w-10:H-h-10\" -q:v 2 -y {$thumbnailPath}";
-            
+
             exec($command);
-            
+
             $video = Video::create([
                 'title'              => $request->title,
                 'description'        => $request->description,
@@ -99,7 +104,7 @@ class VideoController extends Controller
                 ->withInput();
         }
     }
- 
+
     public function edit($id)
     {
         $video = Video::findOrFail($id);
@@ -119,42 +124,42 @@ class VideoController extends Controller
 
             if ($request->hasFile('video')) {
                 $file = $request->file('video');
-    
-                $tempPath = $file->store('uploads/tmp', 'private'); 
+
+                $tempPath = $file->store('uploads/tmp', 'private');
                 $absoluteTempPath = Storage::disk('private')->path($tempPath);
-                
+
                 // Set file permissions for www-data
                 $this->setFilePermissions($absoluteTempPath);
                 $tmpDir = dirname($absoluteTempPath);
                 $this->setFilePermissions($tmpDir, true);
-    
+
                 Log::info("Dispatching Process VideoJob for video ID: {$video->id}");
                 ProcessUploadVideo::dispatch(
                     $video->id,
                     $absoluteTempPath,
                 );
-    
+
                 $video->status = 'Processing';
                 $withVideoUpload = true;
-    
+
             }
-    
+
             $video->title            = $request->input('title', $video->title);
             $video->description      = $request->input('description', $video->description);
             $video->subject_id       = $request->input('subject', $video->subject_id);
             $video->google_form_link = $request->input('google_form_link', $video->google_form_link);
-    
-    
+
+
             if (!$withVideoUpload && $request->filled('status')) {
                 $video->status = $request->input('status'); // e.g., draft/published
             }
-    
+
             $video->save();
-    
+
             DB::commit();
-    
+
             $message = $withVideoUpload ? 'Your video update is being processed and will be available shortly.' : 'Video details updated successfully.';
-    
+
             return redirect()->route('admin.videos.list')->with('success', $message);
 
         } catch (\Throwable $e) {
@@ -163,7 +168,7 @@ class VideoController extends Controller
             return back()
                 ->withErrors(['video' => 'Update failed: ' . $e->getMessage()])
                 ->withInput();
-        }        
+        }
 
     }
 
@@ -175,7 +180,7 @@ class VideoController extends Controller
             // Delete HLS files (playlist and all segments)
             if ($video->file_path && Storage::disk('private')->exists($video->file_path)) {
                 $hlsDir = dirname($video->file_path);
-                
+
                 // Delete the entire HLS directory with all segments
                 if (Storage::disk('private')->exists($hlsDir)) {
                     Storage::disk('private')->deleteDirectory($hlsDir);
@@ -184,12 +189,12 @@ class VideoController extends Controller
                     Storage::disk('private')->delete($video->file_path);
                 }
             }
-            
+
             // Delete thumbnail
             if ($video->video_thumb && Storage::disk('public')->exists($video->video_thumb)) {
                 Storage::disk('public')->delete($video->video_thumb);
             }
-            
+
             // Delete the original uploaded file if it exists in uploads directory
             // The storedPath from processVideoToHLS is in 'uploads/' directory
             // We'll try to find and delete any related upload files
@@ -198,7 +203,7 @@ class VideoController extends Controller
                 "uploads/tmp/{$video->id}",
                 "uploads/{$video->id}",
             ];
-            
+
             foreach ($possibleUploadPaths as $uploadPath) {
                 if (Storage::disk('private')->exists($uploadPath)) {
                     if (Storage::disk('private')->exists($uploadPath) && is_dir(Storage::disk('private')->path($uploadPath))) {
@@ -220,7 +225,7 @@ class VideoController extends Controller
 
     /**
      * Set file permissions for www-data user
-     * 
+     *
      * @param string $path File or directory path
      * @param bool $isDirectory Whether the path is a directory
      * @return bool
@@ -230,17 +235,17 @@ class VideoController extends Controller
         if (!file_exists($path)) {
             return false;
         }
-        
+
         try {
             // Set permissions: 0644 for files, 0755 for directories
             $mode = $isDirectory ? 0755 : 0644;
             chmod($path, $mode);
-            
+
             // Try to set ownership to www-data (may fail if not running as root)
             // Use @ to suppress errors if chown fails
             @chown($path, 'www-data');
             @chgrp($path, 'www-data');
-            
+
             return true;
         } catch (\Exception $e) {
             Log::warning("Failed to set permissions for {$path}: " . $e->getMessage());
@@ -248,5 +253,5 @@ class VideoController extends Controller
         }
     }
 
-    
+
 }
