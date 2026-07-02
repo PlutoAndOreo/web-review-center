@@ -47,7 +47,7 @@ class StudentVideoController extends Controller
 
         $videos = Video::with('subject')
             ->join('rc_subjects', 'rc_videos.subject_id', '=', 'rc_subjects.id')
-            ->where('status', 'published')
+            ->where('status', 'Published')
             ->orderBy('rc_subjects.name', $sort)
             ->get()
             ->groupBy('subject_id');
