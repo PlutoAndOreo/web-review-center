@@ -69,7 +69,7 @@
                     <select id="subject_id" name="subject" class="form-control" required>
                         @foreach($subjects as $subject)
                         <option value="{{ $subject->id }}" {{ $subject->id == $video->subject_id ? 'selected' : '' }}>
-                            {{ $subject->code }}
+                            {{ $subject->name }}
                         </option>
                         @endforeach
                     </select>
