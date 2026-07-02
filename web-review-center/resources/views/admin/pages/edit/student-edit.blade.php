@@ -118,7 +118,7 @@
                 <!-- student type -->
                 <div class="form-group">
                     <label for="type">Student Type</label>
-                    <select id="type" name="type" class="form-select">
+                    <select id="type" name="type" class="form-select form-control">
                         <option value="0" {{ $student->type == 0 ? 'selected' : '' }}>
                             Walk-in
                         </option>

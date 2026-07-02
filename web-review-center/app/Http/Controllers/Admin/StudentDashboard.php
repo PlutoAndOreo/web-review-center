@@ -107,6 +107,7 @@ class StudentDashboard extends Controller
             'school_graduated' => $validated['school_graduated'] ?? $student->school_graduated,
             'graduation_year' => $validated['graduation_year'] ?? $student->graduation_year,
             'is_active' => $request->has('is_active') ? true : false,
+            'type' => $request->has('type') ? $request->type : $student->type,
         ]);
 
         // Handle password change
@@ -139,7 +140,6 @@ class StudentDashboard extends Controller
     public function showVideoProgress($studentId)
     {
         $student = Student::findOrFail($studentId);
-        
         // Get all videos with completion status
         $histories = DB::table('rc_student_histories')
             ->where('student_id', $studentId)
@@ -154,12 +154,12 @@ class StudentDashboard extends Controller
             )
             ->orderBy('rc_videos.created_at', 'desc')
             ->get();
-        
+
         // Get all videos to show which ones haven't been started
         $allVideos = \App\Models\Video::with('subject')
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         return view('admin.pages.student-video-progress', compact('student', 'histories', 'allVideos'));
     }
 

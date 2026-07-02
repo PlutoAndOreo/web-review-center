@@ -106,7 +106,7 @@
                             @endif
                         </div>
                     </div>
-                    <input type="text" class="parent_id" value="{{ $notification->comment->id ?? '' }}">
+                    <input type="hidden" class="parent_id" value="{{ $notification->comment->id ?? '' }}">
                 @endforeach
             </div>
 

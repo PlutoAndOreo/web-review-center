@@ -25,10 +25,7 @@
     $type = auth()->guard('student')->user()->type;
 @endphp
     <div class="max-w-7xl mx-auto px-6 py-10 bg-gray-100 min-h-screen">
-    <button onclick="window.history.back()"
-        class="px-4 py-2 bg-green-500 text-white rounded mb-4">
-        ← BACK
-    </button>
+
 
         <!-- ✅ HEADER -->
         <div class="flex items-center justify-between mb-8">
