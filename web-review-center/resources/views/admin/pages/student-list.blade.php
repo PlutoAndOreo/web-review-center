@@ -115,4 +115,7 @@
             </div>
         </div>
     </div>
+@push('js')
+    @vite('resources/js/app.js')
+@endpush
     @stop

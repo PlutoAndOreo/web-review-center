@@ -26,22 +26,23 @@ class CommentEvent implements ShouldBroadcastNow
     {
         \Log::info("Broadcasting CommentEvent for comment ID: " . $this->comment->id);
         return 'CommentEvent';
-    } 
+    }
     public function broadcastWith()
     {
         \Log::info("Preparing data for CommentEvent broadcast: " . json_encode([
             'id' => $this->comment->id,
-            'message' => $this->comment->message,
-            'student' => $this->comment->student_name,
+            'message' => $this->comment->content,
+            'student' => $this->comment->student_id,
         ]));
 
         $student = Student::find($this->comment->student_id);
         $video = Video::find($this->comment->video_id);
+
         return [
             'id' => $this->comment->id,
             'message' => $this->comment->content,
             'student' => $student->first_name . ' ' . $student->last_name,
             'video_title' => $video->title,
         ];
-    }  
+    }
 }

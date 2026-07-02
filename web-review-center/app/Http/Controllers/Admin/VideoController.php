@@ -41,11 +41,6 @@ class VideoController extends Controller
             $nameOnly = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 
             $uploadToken = $request->input('upload_token');
-            Log::info('Video Path Debug', [
-                'db_path' => $video->file_path,
-                'full_path' => Storage::disk('private')->path($video->file_path),
-                'exists' => Storage::disk('private')->exists($video->file_path),
-            ]);
 
             Log::channel('video_processing')->info("Received upload request for video: {$nameOnly}, upload token: {$uploadToken}");
 

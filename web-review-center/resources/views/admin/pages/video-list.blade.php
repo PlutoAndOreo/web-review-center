@@ -67,7 +67,7 @@
                                 @forelse($videos as $video)
                                     <tr>
                                         @if($video->status === 'Draft')
-                                        
+
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
                                                 {{ $video->status }}
                                             </td>
@@ -87,7 +87,7 @@
                                             @if($video->subject)
                                                 <span
                                                     class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                    {{ $video->subject->name }} 
+                                                    {{ $video->subject->name }}
                                                 </span>
                                             @else
                                                 <span class="text-gray-400 italic">No subject</span>
@@ -115,7 +115,7 @@
                                                 <span class="text-gray-400 italic">No form</span>
                                             @endif
                                         </td>
-                                        
+
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {{ \Carbon\Carbon::parse($video->created_at)->format('Y-m-d') }}
                                         </td>
@@ -193,6 +193,7 @@
     </div>
 
     @section('js')
-		@vite('resources/js/admin/video-list.js')
+		@vite(['resources/js/admin/video-list.js', 'resources/js/app.js'])
+
     @endsection
 @stop
