@@ -82,6 +82,8 @@ class NotificationController extends Controller
             ->with('comment')
             ->findOrFail($id);
 
+
+
         $comment = $notification->comment;
 
         if ($comment) {
@@ -100,13 +102,12 @@ class NotificationController extends Controller
                 'success' => true,
                 'message' => 'Reply sent successfully',
                 'reply' => [
-                    'content' => $comment->admin_reply,
+                    'content' => $comment->content,
                     'admin_name' => auth()->guard('admin')->user()->first_name . ' ' . auth()->guard('admin')->user()->last_name,
                     'replied_at' => now()->format('M d, Y H:i'),
                 ]
             ]);
         }
-
         return response()->json(['success' => false, 'message' => 'Comment not found'], 404);
     }
 }
