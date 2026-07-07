@@ -2,7 +2,14 @@
 
     <div class="flex justify-between">
         <p class="font-semibold text-sm text-gray-900">
-            {{ $comment->student?->first_name ?? $comment->admin?->first_name ?? 'User' }}
+            @if($comment->admin_id)
+            {{ $comment->admin?->first_name }} {{ $comment->admin?->last_name }}
+            <span class="text-xs text-blue-600">(Admin)</span>
+        @elseif($comment->student_id)
+            {{ $comment->student?->first_name }} {{ $comment->student?->last_name }}
+        @else
+            Deleted User
+        @endif
         </p>
 
         <span class="text-xs text-gray-400">
