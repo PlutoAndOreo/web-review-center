@@ -21,11 +21,11 @@
                 class="w-full h-[400px]"
                 controls
                 controlsList="nodownload"
-                @ended="markVideoCompleted()"
+
             ></video>
         @else
         <div x-ref="playerContainer" class="relative">
-            <video x-ref="video"></video>
+            <video x-ref="video" @ended="markVideoCompleted()"></video>
 
             <div class="custom-controls" style="
                     position: absolute;

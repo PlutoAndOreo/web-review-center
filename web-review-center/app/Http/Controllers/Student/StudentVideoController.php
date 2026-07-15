@@ -94,7 +94,7 @@ class StudentVideoController extends Controller
             ->where('video_id', $videoId)
             ->first();
 
-            $isWalkIn = auth()->guard('student')->user()->type == Student::TYPE_WALK_IN;
+        $isWalkIn = auth()->guard('student')->user()->type == Student::TYPE_WALK_IN;
 
         return view('student.videos.parts.video-player', compact(
             'student',

@@ -24,17 +24,13 @@ class DashboardController extends Controller
         $totalSubjects = $subjects->count();
         $totalVideos = $videos->count();
 
-        $watchedVideos = Student::with('histories')->where('id', $student->id)
-            ->whereHas('histories', function ($query) {
-                $query->where('watched', true);
-            })->count();
+        $watchedVideos = StudentHistory::where('student_id', $student->id)
+            ->where('watched', true)
+            ->count();
 
-        $examSubmitted = Student::with('histories')->where('id', $student->id)
-            ->whereHas('histories', function ($query) {
-                $query->where('form_completed', true);
-            })->count();
-
-
+        $examSubmitted = StudentHistory::where('student_id', $student->id)
+            ->where('form_completed', true)
+            ->count();
 
         // $currentProgres = $totalVideos > 0 ? round(($watchedVideos / $totalVideos) * 100, 2) : 0;
         $progress = $totalVideos > 0 ? round(($watchedVideos / $totalVideos) * 100) : 0;
