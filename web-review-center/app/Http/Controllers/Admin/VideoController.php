@@ -61,11 +61,17 @@ class VideoController extends Controller
                 mkdir(public_path('thumbnails'), 0777, true);
             }
 
-            $time = 2;
+            $command = "ffmpeg -i {$absoluteTempPath} -i {$watermark} -vframes 1 -filter_complex \"[1:v]scale=120:-1[wm];[0:v][wm]overlay=W-w-10:H-h-10\" -q:v 2 -y {$thumbnailPath}";
 
-            $command = "ffmpeg -ss {$time} -i {$absoluteTempPath} -i {$watermark} -vframes 1 -filter_complex \"[1:v]scale=120:-1[wm];[0:v][wm]overlay=W-w-10:H-h-10\" -q:v 2 -y {$thumbnailPath}";
+            $output = [];
+            $returnCode = 0;
 
-            exec($command);
+            exec($command . " 2>&1", $output, $returnCode);
+
+            Log::channel('video_processing')->info([
+                'return_code' => $returnCode,
+                'output' => $output,
+            ]);
 
             $video = Video::create([
                 'title'              => $request->title,
