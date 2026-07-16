@@ -87,7 +87,7 @@ class NotificationController extends Controller
         $comment = $notification->comment;
 
         if ($comment) {
-            $comment->create([
+            Comment::create([
                 'admin_reply'      => $request->reply,
                 'admin_id'         => auth()->guard('admin')->id(),
                 'admin_replied_at' => now(),
@@ -102,7 +102,7 @@ class NotificationController extends Controller
                 'success' => true,
                 'message' => 'Reply sent successfully',
                 'reply' => [
-                    'content' => $comment->content,
+                    'content' => $request->reply,
                     'admin_name' => auth()->guard('admin')->user()->first_name . ' ' . auth()->guard('admin')->user()->last_name,
                     'replied_at' => now()->format('M d, Y H:i'),
                 ]

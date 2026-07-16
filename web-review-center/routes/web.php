@@ -127,6 +127,7 @@ use App\Http\Controllers\StreamVideoController;
         // Comments
         Route::post('/videos/{video_id}/comments', [CommentController::class, 'store'])->name('comments.store');
         Route::get('/videos/{id}/comments', [CommentController::class, 'index'])->name('comments.index');
+        Route::delete('/videos/{video_id}/comments/{comment_id}', [CommentController::class, 'destroy'])->name('comments.destroy');
 
     });
 

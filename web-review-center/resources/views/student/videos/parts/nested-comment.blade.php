@@ -1,25 +1,48 @@
 <div class="bg-gray-50 p-4 rounded-lg border mt-2">
 
-    <div class="flex justify-between">
+    <div class="flex justify-between items-start">
         <p class="font-semibold text-sm text-gray-900">
             @if($comment->admin_id)
-            {{ $comment->admin?->first_name }} {{ $comment->admin?->last_name }}
-            <span class="text-xs text-blue-600">(Admin)</span>
-        @elseif($comment->student_id)
-            {{ $comment->student?->first_name }} {{ $comment->student?->last_name }}
-        @else
-            Deleted User
-        @endif
+                {{ $comment->admin?->first_name }} {{ $comment->admin?->last_name }}
+                <span class="text-xs text-blue-600">(Admin)</span>
+            @elseif($comment->student_id)
+                {{ $comment->student?->first_name }} {{ $comment->student?->last_name }}
+            @else
+                Deleted User
+            @endif
         </p>
 
-        <span class="text-xs text-gray-400">
-            {{ $comment->created_at->diffForHumans() }}
-        </span>
+        <div class="flex items-center gap-2">
+            @if(is_null($comment->admin_id) && auth('student')->id() === $comment->student_id)
+            <form
+                    action="{{ route('student.comments.destroy', [$comment->video_id ,$comment->id]) }}"
+                    method="POST"
+                    onsubmit="return confirm('Are you sure you want to delete this comment?')"
+                >
+                    @csrf
+                    @method('DELETE')
+
+
+                    <button
+                        type="submit"
+                        class="text-xs text-red-600 hover:text-red-800"
+                    >
+                        Delete
+                    </button>
+
+
+                </form>
+            @endif
+        </div>
     </div>
 
     <p class="text-gray-700 mt-2">
         {{ $comment->content }}
     </p>
+    <span class="text-xs text-gray-400">
+        {{ $comment->created_at->diffForHumans() }}
+    </span>
+    <br>
 
     {{-- Reply Button --}}
     <button

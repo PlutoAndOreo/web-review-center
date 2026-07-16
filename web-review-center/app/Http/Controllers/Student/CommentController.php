@@ -69,8 +69,24 @@ class CommentController extends Controller
                     'admin_reply'       => $comment->admin_reply,
                     'admin_name'        => $comment->admin ? ($comment->admin->first_name . ' ' . $comment->admin->last_name) : null,
                     'admin_replied_at'  => Carbon::parse($comment->admin_replied_at) ? Carbon::parse($comment->admin_replied_at)->format('M d, Y H:i') : null,
+                    'video_id'          => $comment->video_id,
                 ];
             })
         ]);
+    }
+
+    public function destroy($videoId, $commentId)
+    {
+        $comment = Comment::where('video_id', $videoId)
+            ->where('id', $commentId)
+            ->firstOrFail();
+
+        if ($comment->student_id !== Auth::guard('student')->id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $comment->delete();
+
+        return redirect()->back()->with('success', 'Comment deleted successfully.');
     }
 }
