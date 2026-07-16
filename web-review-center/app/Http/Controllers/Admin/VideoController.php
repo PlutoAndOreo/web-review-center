@@ -61,8 +61,16 @@ class VideoController extends Controller
                 mkdir(public_path('thumbnails'), 0777, true);
             }
 
-            $command = "ffmpeg -i {$absoluteTempPath} -i {$watermark} -vframes 1 -filter_complex \"[1:v]scale=120:-1[wm];[0:v][wm]overlay=W-w-10:H-h-10\" -q:v 2 -y {$thumbnailPath}";
+            // $command = "ffmpeg -i {$absoluteTempPath} -i {$watermark} -vframes 1 -filter_complex \"[1:v]scale=120:-1[wm];[0:v][wm]overlay=W-w-10:H-h-10\" -q:v 2 -y {$thumbnailPath}";
+            $time = 2;
 
+            $command = sprintf(
+                'ffmpeg -ss %d -i %s -i %s -vframes 1 -filter_complex "[1:v]scale=120:-1[wm];[0:v][wm]overlay=W-w-10:H-h-10" -q:v 2 -y %s',
+                $time,
+                escapeshellarg($absoluteTempPath),
+                escapeshellarg($watermark),
+                escapeshellarg($thumbnailPath)
+            );
             $output = [];
             $returnCode = 0;
 
