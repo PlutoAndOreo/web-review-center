@@ -38,11 +38,20 @@
                                     </div>
                                     <div class="notification-info">
                                         <div class="notification-title">
-                                            New Comment on Video
+                                            @if($notification->type === 'video_published')
+                                                Video Published
+                                            @else
+                                                New Comment on Video
+                                            @endif
                                         </div>
                                         <div class="notification-meta">
-                                            <span
-                                                class="notification-badge">{{ $notification->comment->video->title ?? 'Unknown Video' }}</span>
+                                            <span class="notification-badge">
+                                                @if($notification->type === 'video_published')
+                                                    {{ $notification->video->title ?? 'Unknown Video' }}
+                                                @else
+                                                    {{ $notification->comment->video->title ?? 'Unknown Video' }}
+                                                @endif
+                                            </span>
                                             <span>{{ $notification->created_at->format('M d, Y H:i') }}</span>
                                             @if(!$notification->is_read)
                                                 <span class="notification-badge"
@@ -64,6 +73,14 @@
                                         </button>
                                     </div>
                                 </div>
+
+                                @if($notification->type === 'video_published')
+                                    <div class="notification-content">
+                                        <div class="notification-comment">
+                                            {{ $notification->message }}
+                                        </div>
+                                    </div>
+                                @else
                                 @php
                                     $latestReply = $notification->comment->replies
                                     ->whereNotNull('admin_id')
@@ -126,9 +143,12 @@
                                     @endif
 
                                 </div>
+                                @endif
                             </div>
+                            @if($notification->type !== 'video_published')
                             <input type="hidden" class="parent_id"
                                 value="{{ $notification->comment->id ?? '' }}">
+                            @endif
                         @endforeach
                     </div>
 

@@ -6,6 +6,7 @@ use Illuminate\Queue\Middleware\WithoutOverlapping;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use App\Services\AdminNotificationService;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Queue\SerializesModels;
@@ -49,6 +50,8 @@ class ProcessUploadVideo implements ShouldQueue
                     'file_path'    => $hlsPlaylistPath,
                     'status'       => 'Published',
                 ]);
+
+                AdminNotificationService::notifyVideoPublished($video->fresh());
             }
 
             // Clean up temporary files
@@ -62,7 +65,7 @@ class ProcessUploadVideo implements ShouldQueue
 
             Log::info("Video {$videoId} fully processed.");
         } catch (\Throwable $th) {
-            
+
             Log::error("Processing failed for video {$this->videoId}: {$th->getMessage()}", ['trace' => $th->getTraceAsString()]);
 
             if ($video = Video::find($this->videoId)) {
@@ -72,18 +75,18 @@ class ProcessUploadVideo implements ShouldQueue
             throw $th;
 
         }
-        
+
     }
 
     /**
      * Convert video to HLS format using FFmpeg
-     * 
+     *
      * HLS (HTTP Live Streaming) Standard:
      * - Splits video into small segments (10 seconds each)
      * - Creates playlist.m3u8 file listing all segments
      * - Segments are loaded on-demand (chunked streaming)
      * - Supports adaptive bitrate streaming
-     * 
+     *
      * @param string $absoluteFilePath Original video file path
      * @param int $videoId Video ID
      * @return array [playlist_path, stored_path]
@@ -94,7 +97,7 @@ class ProcessUploadVideo implements ShouldQueue
         $newFileName = uniqid() . '.mp4';
         $storedPath = 'uploads/' . $newFileName;
         Storage::disk('private')->put($storedPath, file_get_contents($absoluteFilePath));
-        
+
         $storedFilePath = Storage::disk('private')->path($storedPath);
         $this->setFilePermissions($storedFilePath);
 
@@ -102,33 +105,33 @@ class ProcessUploadVideo implements ShouldQueue
         $today = date('Y-m-d');
         $hlsOutputDir = "videos/{$today}/hls_{$videoId}";
         $hlsPlaylistPath = "{$hlsOutputDir}/playlist.m3u8";
-        
+
         // Get parent directory path (videos/YYYY-MM-DD/)
         $parentDir = Storage::disk('private')->path("videos/{$today}");
-        
+
         // Create parent directory first if it doesn't exist
         // Then IMMEDIATELY force ownership to www-data:www-data
         if (!file_exists($parentDir)) {
             Storage::disk('private')->makeDirectory("videos/{$today}");
-            
+
             $this->forceDirectoryOwnership($parentDir);
         } else {
             // Directory exists, but might be owned by root - fix it
             $this->forceDirectoryOwnership($parentDir);
         }
-        
+
         // Now create the HLS subdirectory
         Storage::disk('private')->makeDirectory($hlsOutputDir);
         $hlsOutputPath = Storage::disk('private')->path($hlsOutputDir);
-        
+
         // Force ownership on subdirectory immediately after creation
         $this->forceDirectoryOwnership($hlsOutputPath);
-        
+
         // Set permissions recursively on the entire HLS directory structure
         // This ensures videos/YYYY-MM-DD/hls_{videoId}/ and all contents have www-data ownership
         // Equivalent to: chown -R www-data:www-data videos/YYYY-MM-DD/hls_{videoId}
         $this->setDirectoryPermissionsRecursive($hlsOutputPath);
-        
+
         // Also ensure parent directory permissions are still correct (in case subdirectory creation changed them)
         $this->setDirectoryPermissionsRecursive($parentDir);
 
@@ -139,37 +142,26 @@ class ProcessUploadVideo implements ShouldQueue
         $watermarkPath = public_path('image/logo.png');
 
         $hasWatermark = file_exists($watermarkPath);
-        
+
         $inputPath = Storage::disk('private')->path($storedPath);
         $playlistFullPath = Storage::disk('private')->path($hlsPlaylistPath);
-    
-       
-        if ($hasWatermark) {
 
+
+        if ($hasWatermark) {
             $ffmpegCommand = sprintf(
-                'ffmpeg -i %s -i %s -filter_complex "[1:v]scale=120:-1[wm];[0:v][wm]overlay=W-w-10:H-h-10[v]" -map "[v]" -map 0:a? -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 128k -hls_time 10 -hls_list_size 0 -hls_segment_filename %s/segment_%%03d.ts -start_number 0 -f hls -y %s',
+                'ffmpeg -i %s -i %s -filter_complex "[1:v][0:v]scale2ref=w=iw*0.05:h=ow/mdar[wm][base];[wm]colorchannelmixer=aa=0.3[wm_alpha];[base][wm_alpha]overlay=W-w-20:H-h-20[v]" -map "[v]" -map 0:a? -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 128k -hls_time 10 -hls_list_size 0 -hls_segment_filename %s/segment_%%03d.ts -start_number 0 -f hls -y %s',
                 escapeshellarg($inputPath),
                 escapeshellarg($watermarkPath),
                 escapeshellarg($hlsOutputPath),
                 escapeshellarg($playlistFullPath)
             );
-        
-        } else {
-        
-            $ffmpegCommand = sprintf(
-                'ffmpeg -i %s -map 0:v -map 0:a? -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 128k -hls_time 10 -hls_list_size 0 -hls_segment_filename %s/segment_%%03d.ts -start_number 0 -f hls -y %s',
-                escapeshellarg($inputPath),
-                escapeshellarg($hlsOutputPath),
-                escapeshellarg($playlistFullPath)
-            );
-        
         }
-       
+
         // Execute FFmpeg command
-        Log::channel('video_processing')->info("Executing FFmpeg command for video ID: {$videoId}");
-        
+        Log::channel('video_processing')->info("Executing FFmpeg command fors video ID: {$videoId}");
+
         exec($ffmpegCommand . ' 2>&1', $output, $returnCode);
-        
+
         if ($returnCode !== 0) {
             Log::error("FFmpeg HLS conversion failed for video ID: {$videoId}", [
                 'command' => $ffmpegCommand,
@@ -178,9 +170,9 @@ class ProcessUploadVideo implements ShouldQueue
             ]);
             throw new \Exception("Failed to convert video to HLS format: " . implode("\n", $output));
         }
-        
+
         Log::channel('video_processing')->info("FFmpeg HLS conversion completed successfully" . ($hasWatermark ? " with watermark" : "") . " for video ID: {$videoId}");
-        
+
         // Set permissions recursively on entire HLS directory (like chown -R www-data:www-data)
         // This ensures all files and subdirectories have correct ownership
         $this->setDirectoryPermissionsRecursive($hlsOutputPath);
@@ -192,7 +184,7 @@ class ProcessUploadVideo implements ShouldQueue
 
     /**
      * Set file permissions for www-data user
-     * 
+     *
      * @param string $path File or directory path
      * @param bool $isDirectory Whether the path is a directory
      * @return bool
@@ -202,17 +194,17 @@ class ProcessUploadVideo implements ShouldQueue
         if (!file_exists($path)) {
             return false;
         }
-        
+
         try {
             // Set permissions: 0644 for files, 0755 for directories
             $mode = $isDirectory ? 0755 : 0644;
             chmod($path, $mode);
-            
+
             // Try to set ownership to www-data (may fail if not running as root)
             // Use @ to suppress errors if chown fails
             @chown($path, 'www-data');
             @chgrp($path, 'www-data');
-            
+
             return true;
         } catch (\Exception $e) {
             Log::warning("Failed to set permissions for {$path}: " . $e->getMessage());
@@ -223,7 +215,7 @@ class ProcessUploadVideo implements ShouldQueue
     /**
      * Force directory ownership to www-data:www-data immediately
      * This is called right after directory creation to ensure proper ownership
-     * 
+     *
      * @param string $directoryPath Directory path
      * @return bool
      */
@@ -232,19 +224,19 @@ class ProcessUploadVideo implements ShouldQueue
         if (!file_exists($directoryPath)) {
             return false;
         }
-        
+
         try {
             // Determine if we're running as root
             $isRoot = false;
             $currentUser = 'unknown';
-            
+
             if (function_exists('posix_geteuid') && function_exists('posix_getpwuid')) {
                 $uid = posix_geteuid();
                 $userInfo = posix_getpwuid($uid);
                 $currentUser = $userInfo['name'] ?? 'unknown';
                 $isRoot = ($uid === 0 || $currentUser === 'root');
             }
-            
+
             // Build chown command - try with sudo if not root, otherwise direct chown
             if (!$isRoot) {
                 // Try sudo first (passwordless sudo should be configured for www-data user)
@@ -259,9 +251,9 @@ class ProcessUploadVideo implements ShouldQueue
                     escapeshellarg($directoryPath)
                 );
             }
-            
+
             exec($chownCommand, $output, $returnCode);
-            
+
             if ($returnCode !== 0) {
                 // If sudo failed and we're not root, try without sudo
                 if (!$isRoot) {
@@ -271,16 +263,16 @@ class ProcessUploadVideo implements ShouldQueue
                     );
                     exec($chownCommand, $output, $returnCode);
                 }
-                
+
                 if ($returnCode !== 0) {
                     Log::warning("Failed to force ownership for {$directoryPath}: " . implode("\n", $output));
                     return false;
                 }
             }
-            
+
             // Also set directory permissions (755)
             chmod($directoryPath, 0755);
-            
+
             Log::info("Forced ownership to www-data:www-data for directory: {$directoryPath}");
             return true;
         } catch (\Exception $e) {
@@ -291,7 +283,7 @@ class ProcessUploadVideo implements ShouldQueue
 
     /**
      * Set directory permissions recursively (like chown -R www-data:www-data)
-     * 
+     *
      * @param string $directoryPath Directory path
      * @return bool
      */
@@ -301,12 +293,12 @@ class ProcessUploadVideo implements ShouldQueue
             Log::warning("Directory does not exist: {$directoryPath}");
             return false;
         }
-        
+
         try {
             // Determine if we're running as root
             $isRoot = false;
             $currentUser = 'unknown';
-            
+
             if (function_exists('posix_geteuid') && function_exists('posix_getpwuid')) {
                 $uid = posix_geteuid();
                 $userInfo = posix_getpwuid($uid);
@@ -323,9 +315,9 @@ class ProcessUploadVideo implements ShouldQueue
                     $isRoot = $testChown;
                 }
             }
-            
+
             Log::info("Setting permissions for {$directoryPath} (current user: {$currentUser}, isRoot: " . ($isRoot ? 'yes' : 'no') . ")");
-            
+
             // Build chown command - try with sudo if not root, otherwise direct chown
             if (!$isRoot) {
                 // Try sudo first (passwordless sudo should be configured for www-data user)
@@ -340,9 +332,9 @@ class ProcessUploadVideo implements ShouldQueue
                     escapeshellarg($directoryPath)
                 );
             }
-            
+
             exec($chownCommand, $output, $returnCode);
-            
+
             if ($returnCode !== 0) {
                 // If sudo failed and we're not root, try without sudo (might work if process has CAP_CHOWN)
                 if (!$isRoot) {
@@ -353,7 +345,7 @@ class ProcessUploadVideo implements ShouldQueue
                     );
                     exec($chownCommand, $output, $returnCode);
                 }
-                
+
                 if ($returnCode !== 0) {
                     Log::error("Failed to set recursive ownership for {$directoryPath}");
                     Log::error("Command: {$chownCommand}");
@@ -364,20 +356,20 @@ class ProcessUploadVideo implements ShouldQueue
                     return $this->setDirectoryPermissionsFallback($directoryPath);
                 }
             }
-            
+
             // Also set permissions recursively
             $chmodCommand = sprintf(
                 'find %s -type d -exec chmod 755 {} \\; && find %s -type f -exec chmod 644 {} \\; 2>&1',
                 escapeshellarg($directoryPath),
                 escapeshellarg($directoryPath)
             );
-            
+
             exec($chmodCommand, $chmodOutput, $chmodReturnCode);
-            
+
             if ($chmodReturnCode !== 0) {
                 Log::warning("Failed to set recursive permissions for {$directoryPath}: " . implode("\n", $chmodOutput));
             }
-            
+
             Log::info("Successfully set recursive permissions for directory: {$directoryPath}");
             return true;
         } catch (\Exception $e) {
@@ -390,7 +382,7 @@ class ProcessUploadVideo implements ShouldQueue
     /**
      * Fallback method to set permissions file by file
      * Used when chown -R fails
-     * 
+     *
      * @param string $directoryPath Directory path
      * @return bool
      */
@@ -399,18 +391,18 @@ class ProcessUploadVideo implements ShouldQueue
         try {
             // Set directory permissions
             $this->setFilePermissions($directoryPath, true);
-            
+
             // Recursively set permissions for all files and subdirectories
             $iterator = new \RecursiveIteratorIterator(
                 new \RecursiveDirectoryIterator($directoryPath, \RecursiveDirectoryIterator::SKIP_DOTS),
                 \RecursiveIteratorIterator::SELF_FIRST
             );
-            
+
             foreach ($iterator as $item) {
                 $isDir = $item->isDir();
                 $this->setFilePermissions($item->getPathname(), $isDir);
             }
-            
+
             return true;
         } catch (\Exception $e) {
             Log::error("Fallback permission setting failed for {$directoryPath}: " . $e->getMessage());

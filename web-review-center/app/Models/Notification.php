@@ -11,6 +11,7 @@ class Notification extends Model
     protected $fillable = [
         'admin_id',
         'comment_id',
+        'video_id',
         'type',
         'message',
         'is_read',
@@ -22,11 +23,16 @@ class Notification extends Model
 
     public function admin()
     {
-        return $this->belongsTo(RcAdmin::class, 'admin_id');
+        return $this->belongsTo(Admin::class, 'admin_id');
     }
 
     public function comment()
     {
-        return $this->belongsTo(Comment::class)->withTrashed();;
+        return $this->belongsTo(Comment::class)->withTrashed();
+    }
+
+    public function video()
+    {
+        return $this->belongsTo(Video::class);
     }
 }

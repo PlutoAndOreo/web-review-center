@@ -25,29 +25,70 @@ window.Echo = new Echo({
 window.Echo.channel('admin-comments')
 .listen('.CommentEvent', (e) => {
     console.log('EVENT RECEIVED:', e);
-
-    showNotification('New comment on your '+ e.video_title+' by ' + e.student + ': "' + e.message + '"');
+    showNotification(e.student+' commented on ' + e.video_title + ' video: "' + e.message + '"');
 });
+
+window.Echo.channel('admin-notifications')
+.listen('.VideoPublishedEvent', (e) => {
+    console.log('VIDEO PUBLISHED EVENT:', e);
+
+    showNotification('Video published: "' + e.title + '" is now available. Please refresh the page .');
+});
+
+function getNotificationContainer() {
+    let container = document.getElementById('notif-container');
+
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notif-container';
+        container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
+        document.body.appendChild(container);
+    }
+
+    return container;
+}
 
 function showNotification(message) {
 
-    const container = document.getElementById('notif-container');
+    const container = getNotificationContainer();
 
     const notif = document.createElement('div');
 
     notif.innerHTML = `
         <div style="
-            background: #28a745;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            margin-top: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            transform: translateX(100%);
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 320px;
+            max-width: 400px;
+            background: white;
+            border-left: 5px solid #22c55e;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(120%);
             opacity: 0;
             transition: all 0.4s ease;
         ">
-            📢 ${message}
+
+
+            <div>
+                <div style="
+                    font-weight: bold;
+                    color: #111827;
+                    margin-bottom: 3px;
+                ">
+                </div>
+                <div style="
+                    color: #6b7280;
+                    font-size: 14px;
+                ">
+                    ${message}
+                </div>
+            </div>
         </div>
     `;
 
@@ -55,7 +96,6 @@ function showNotification(message) {
 
     const box = notif.firstElementChild;
 
-    // // ✅ slide in
     setTimeout(() => {
         box.style.transform = 'translateX(0)';
         box.style.opacity = '1';
@@ -68,7 +108,7 @@ function showNotification(message) {
         setTimeout(() => {
             notif.remove();
         }, 400);
-    }, 3000);
+    }, 8000);
 }
 
 

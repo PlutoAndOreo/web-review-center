@@ -6,6 +6,7 @@ use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use ProtoneMedia\LaravelFFMpeg\Filters\WatermarkFactory;
 use Illuminate\Support\Facades\Storage;
 use App\Services\VideoProcessServices;
+use App\Services\AdminNotificationService;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\VideoRequest;
@@ -54,32 +55,29 @@ class VideoController extends Controller
 
             $thumbnailName = $nameOnly. '_' . time() . '.jpg';
             $thumbnailPath = public_path('thumbnails/' . $thumbnailName);
-            $watermark = public_path('image/logo.png');
-
 
             if (!file_exists(public_path('thumbnails'))) {
                 mkdir(public_path('thumbnails'), 0777, true);
             }
 
-            // $command = "ffmpeg -i {$absoluteTempPath} -i {$watermark} -vframes 1 -filter_complex \"[1:v]scale=120:-1[wm];[0:v][wm]overlay=W-w-10:H-h-10\" -q:v 2 -y {$thumbnailPath}";
-            $time = 2;
-
             $command = sprintf(
-                'ffmpeg -ss %d -i %s -i %s -vframes 1 -filter_complex "[1:v]scale=120:-1[wm];[0:v][wm]overlay=W-w-10:H-h-10" -q:v 2 -y %s',
-                $time,
+                'ffmpeg -ss %d -i %s -frames:v 1 -q:v 2 -y %s',
+                2,
                 escapeshellarg($absoluteTempPath),
-                escapeshellarg($watermark),
                 escapeshellarg($thumbnailPath)
             );
+
             $output = [];
             $returnCode = 0;
 
-            exec($command . " 2>&1", $output, $returnCode);
+            exec($command . ' 2>&1', $output, $returnCode);
 
-            Log::channel('video_processing')->info([
-                'return_code' => $returnCode,
-                'output' => $output,
-            ]);
+            Log::info('FFmpeg Output:', $output);
+            Log::info('Return Code: ' . $returnCode);
+
+            Log::info('Thumbnail Exists: ' . (
+                file_exists($thumbnailPath) ? 'YES' : 'NO'
+            ));
 
             $video = Video::create([
                 'title'              => $request->title,
@@ -126,6 +124,7 @@ class VideoController extends Controller
         $video = Video::findOrFail($id);
 
         $withVideoUpload = false;
+        $wasPublished = $video->status === 'Published';
 
         DB::beginTransaction();
 
@@ -164,6 +163,15 @@ class VideoController extends Controller
             }
 
             $video->save();
+
+            if (
+                !$withVideoUpload
+                && $request->filled('status')
+                && $request->input('status') === 'Published'
+                && !$wasPublished
+            ) {
+                AdminNotificationService::notifyVideoPublished($video);
+            }
 
             DB::commit();
 

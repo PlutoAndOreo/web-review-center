@@ -54,7 +54,7 @@
                                         {{ $user->email }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                             {{ $user->role === 'super_admin' ? 'bg-purple-100 text-purple-800' : ($user->role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800') }}">
                                             {{ ucfirst(str_replace('_', ' ', $user->role)) }}
                                         </span>
@@ -74,9 +74,9 @@
                                         {{ \Carbon\Carbon::parse($user->created_at)->format('Y-m-d') }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
-                                        <a href="{{ route('admin.users.edit', $user->id) }}" 
+                                        <a href="{{ route('admin.users.edit', $user->id) }}"
                                             class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                                        <form action="{{ route('admin.users.destroy', $user->id) }}" 
+                                        <form action="{{ route('admin.users.destroy', $user->id) }}"
                                             method="POST" class="inline"
                                             onsubmit="return confirm('Are you sure you want to delete this user?')">
                                             @csrf
@@ -106,3 +106,6 @@
     </div>
 </div>
 @stop
+@push('js')
+    @vite('resources/js/app.js')
+@endpush

@@ -3,6 +3,36 @@
 @section('title', 'Video Player')
 
 @section('content')
+@push('styles')
+<style>
+    .video-player-container:fullscreen,
+    .video-player-container:-webkit-full-screen {
+        width: 100%;
+        height: 100%;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .video-player-container:fullscreen .video-player-media,
+    .video-player-container:-webkit-full-screen .video-player-media {
+        width: 100%;
+        height: 100%;
+        max-height: 100vh;
+        object-fit: contain;
+    }
+
+    .video-player-container:fullscreen .custom-controls,
+    .video-player-container:-webkit-full-screen .custom-controls {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+    }
+</style>
+@endpush
 
 <div class="max-w-5xl mx-auto bg-white p-6 rounded-xl shadow">
     <div class="min-h-screen  py-6">
@@ -18,14 +48,15 @@
         @if($isWalkIn)
             <video
                 x-ref="video"
+                {{-- class="w-full aspect-video object-contain" --}}
                 class="w-full h-[400px]"
                 controls
                 controlsList="nodownload"
 
             ></video>
         @else
-        <div x-ref="playerContainer" class="relative">
-            <video x-ref="video" @ended="markVideoCompleted()"></video>
+        <div x-ref="playerContainer" class="video-player-container relative ">
+            <video x-ref="video" class="video-player-media w-full h-[400px]" @ended="markVideoCompleted()"></video>
 
             <div class="custom-controls" style="
                     position: absolute;

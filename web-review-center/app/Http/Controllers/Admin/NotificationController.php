@@ -11,7 +11,13 @@ class NotificationController extends Controller
 {
     public function index()
     {
-        $notifications = Notification::with(['comment.student', 'comment.video', 'comment.admin'])
+        $notifications = Notification::with([
+                'comment.student',
+                'comment.video',
+                'comment.admin',
+                'comment.replies',
+                'video',
+            ])
             ->where('admin_id', auth()->guard('admin')->id())
 
             ->orderBy('created_at', 'desc')

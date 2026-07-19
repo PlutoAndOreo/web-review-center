@@ -5,6 +5,8 @@
 @section('content')
 
   <div
+  {{-- class="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow" --}}
+
       class="max-w-5xl mx-auto bg-white p-6 rounded-xl shadow"
       x-data="{ progress: 0, completed: false, showExam: false }">
       <!--  HEADER -->
@@ -36,6 +38,8 @@
 
           <video
               x-ref="video"
+              {{-- class="w-full aspect-video object-contain" --}}
+
               class="w-full h-[400px]"
               @timeupdate="
                   let v = $event.target;
