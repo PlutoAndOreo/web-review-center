@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <title>{{ $title ?? 'Student' }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -17,8 +19,8 @@
             background-image: url('/image/books.jpg');
             background-size: cover;
             background-position: center;
-            filter: blur(5px); 
-            z-index: -1; 
+            filter: blur(5px);
+            z-index: -1;
         }
     </style>
 

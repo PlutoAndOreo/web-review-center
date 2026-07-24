@@ -8,33 +8,38 @@ import Pusher from 'pusher-js';
 
 import Alpine from 'alpinejs'
 
-
-
 window.Alpine = Alpine
 Alpine.start()
 
-window.Pusher = Pusher;
+const excludedPaths = [
+    '/student/login',
+    '/admin/login',
+];
 
-window.Echo = new Echo({
-    broadcaster: 'pusher',
-    key: import.meta.env.VITE_PUSHER_APP_KEY,
-    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
-    forceTLS: true
-});
+if (!excludedPaths.includes(window.location.pathname)) {
 
-window.Echo.channel('admin-comments')
-.listen('.CommentEvent', (e) => {
-    console.log('EVENT RECEIVED:', e);
-    showNotification(e.student+' commented on ' + e.video_title + ' video: "' + e.message + '"');
-});
+    window.Pusher = Pusher;
 
-window.Echo.channel('admin-notifications')
-.listen('.VideoPublishedEvent', (e) => {
-    console.log('VIDEO PUBLISHED EVENT:', e);
+    window.Echo = new Echo({
+        broadcaster: 'pusher',
+        key: import.meta.env.VITE_PUSHER_APP_KEY,
+        cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
+        forceTLS: true
+    });
 
-    showNotification('Video published: "' + e.title + '" is now available. Please refresh the page .');
-});
+    window.Echo.channel('admin-comments')
+    .listen('.CommentEvent', (e) => {
+        console.log('EVENT RECEIVED:', e);
+        showNotification(e.student+' commented on ' + e.video_title + ' video: "' + e.message + '"');
+    });
 
+    window.Echo.channel('admin-notifications')
+    .listen('.VideoPublishedEvent', (e) => {
+        console.log('VIDEO PUBLISHED EVENT:', e);
+
+        showNotification('Video published: "' + e.title + '" is now available. Please refresh the page .');
+    });
+}
 function getNotificationContainer() {
     let container = document.getElementById('notif-container');
 

@@ -160,7 +160,18 @@ class ProcessUploadVideo implements ShouldQueue
         // Execute FFmpeg command
         Log::channel('video_processing')->info("Executing FFmpeg command fors video ID: {$videoId}");
 
+        $output = [];
+        $returnCode = 0;
+
         exec($ffmpegCommand . ' 2>&1', $output, $returnCode);
+
+        Log::info('FFmpeg Return Code', [
+            'return_code' => $returnCode,
+        ]);
+
+        Log::info('FFmpeg Output', [
+            'output' => $output,
+        ]);
 
         if ($returnCode !== 0) {
             Log::error("FFmpeg HLS conversion failed for video ID: {$videoId}", [
