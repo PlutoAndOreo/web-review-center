@@ -28,7 +28,11 @@ class DashboardController extends Controller
             ->where('watched', true)
             ->count();
 
-        $examSubmitted = StudentHistory::where('student_id', $student->id)
+        $examSubmitted = StudentHistory::with('video')
+            ->whereHas('video', function ($query) {
+                $query->where('status', Video::STATUS['PUBLISHED']);
+            })
+            ->where('student_id', $student->id)
             ->where('form_completed', true)
             ->count();
 

@@ -21,5 +21,9 @@ class StudentHistory extends Model
         return $this->belongsTo(Student::class, 'student_id');
     }
 
+    public function video()
+    {
+        return $this->belongsTo(Video::class, 'video_id');
+    }
 
 }
