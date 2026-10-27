@@ -5,7 +5,7 @@ PHP_CONTAINER        = php
 NGINX_CONTAINER      = nginx
 MYSQL_CONTAINER      = mysql
 NODE_CONTAINER       = node
-DOCKER_COMPOSE_PROD  = docker compose -f docker-compose-prod.yml
+DOCKER_COMPOSE_PROD  = docker compose --env-file ./web-review-center/.env -f docker-compose-prod.yml
 
 # Default target
 .PHONY: help
