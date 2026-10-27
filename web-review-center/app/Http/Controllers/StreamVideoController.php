@@ -20,13 +20,13 @@ class StreamVideoController extends Controller
         }
 
         $playlistPath = Storage::disk('private')->path($video->file_path);
-        
+
         if (!file_exists($playlistPath)) {
             abort(404, 'HLS playlist file not found');
         }
 
         $content = file_get_contents($playlistPath);
-        
+
         // Rewrite relative segment paths to absolute URLs
         // FFmpeg generates: segment_000.ts
         // We convert to: /student/video-hls/{id}/segment/segment_000.ts
@@ -43,44 +43,45 @@ class StreamVideoController extends Controller
             ->header('Pragma', 'no-cache')
             ->header('Expires', '0')
             ->header('Access-Control-Allow-Origin', '*');
-        
+
     }
 
     public function hlsSegment($id, $segment) {
             try {
                 $video = Video::findOrFail($id);
-    
+
                 if (!$video->file_path) {
                     Log::error("Video {$id} has no file_path");
                     abort(404, 'Video not found');
                 }
-    
+
                 // Get HLS directory from playlist path
                 // file_path is like: videos/2026-01-03/hls_5/playlist.m3u8
                 // We need: videos/2026-01-03/hls_5/segment_000.ts
                 $hlsDir = dirname($video->file_path);
                 $segmentFileName = basename($segment); // Get just the filename (segment_000.ts)
                 $segmentPath = $hlsDir . '/' . $segmentFileName;
-                
+
                 Log::info("Attempting to serve segment: {$segmentPath} for video {$id}");
-                
+
                 if (!Storage::disk('private')->exists($segmentPath)) {
                     Log::error("HLS segment not found in storage: {$segmentPath} for video {$id}");
                     abort(404, 'Segment not found');
                 }
-    
+
                 $segmentFullPath = Storage::disk('private')->path($segmentPath);
-                
+
                 if (!file_exists($segmentFullPath)) {
                     Log::error("HLS segment file does not exist on disk: {$segmentFullPath} for video {$id}");
                     abort(404, 'Segment file not found');
                 }
-                
-                if (!is_readable($segmentFullPath)) {
-                    Log::error("HLS segment file is not readable: {$segmentFullPath} for video {$id}");
-                    abort(500, 'Segment file not readable');
-                }
-                
+
+                //TODO:: need to check if the file is readable, but this is causing issues in some environments. Uncomment if needed.
+                // if (!is_readable($segmentFullPath)) {
+                //     Log::error("HLS segment file is not readable: {$segmentFullPath} for video {$id}");
+                //     abort(500, 'Segment file not readable');
+                // }
+
                 return response()->file($segmentFullPath, [
                     'Content-Type' => 'video/mp2t',
                     'Cache-Control' => 'public, max-age=3600',
@@ -98,6 +99,6 @@ class StreamVideoController extends Controller
                 ]);
                 abort(500, 'Error serving segment');
             }
-        
+
     }
 }
