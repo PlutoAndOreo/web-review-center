@@ -6,7 +6,7 @@
     <div class="flex-1 p-10 bg-green-200 rounded-lg shadow-md m-4">
         <div class="mb-8 flex flex-col gap-5">
             <h1 class="text-3xl font-semibold text-gray-800 mb-2">
-                Welcome back, {{ $student->first_name }} 
+                Welcome back, {{ $student->first_name }}
             </h1>
             <p class="text-gray-600">
                 Access your subjects, track your progress, and manage your profile.
@@ -73,10 +73,10 @@
 
         <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition">
             <h2 class="text-lg font-semibold text-gray-800 mb-1">
-                Total Active Subjects
+                Total Active Videos
             </h2>
             <p class="text-gray-500 text-sm mb-4">
-                
+
             </p>
             <p class="text-2xl font-bold text-gray-900">
                 {{ $totalVideos }}
@@ -84,6 +84,6 @@
         </div>
     </div>
 
-    
+
 
 @endsection
